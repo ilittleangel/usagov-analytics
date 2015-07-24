@@ -1,6 +1,7 @@
 # usagov-analytics
-==================
-Real-time analytics about shortened urls of US government websites
+------------------
+###**Real-time analytics about shortened urls of US government websites**
+------------------
 
 Este repositorio contiene una aplicación para el análisis real-time y análisis batch del acortamiento mediante [bitly](https://bitly.com/) de url's de paginas web de USA, es decir paginas acabadas en .gov y en .mil. Estos datos los ofrece el gobierno de los EEUU en un stream continuo y en tiempo real mediante eventos que contienen información del acortamiento que se produce en cada instante. Información sobre el usuario que produce el evento o click, es decir, información sobre la localización, navegador, timestamp... Estos eventos están serializados en formato JSON, lo que hace sencilla la interacción con las tecnologías de procesado y persistencia de los datos.
 
