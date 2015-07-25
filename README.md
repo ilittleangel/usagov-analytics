@@ -41,15 +41,17 @@ Esta sección la voy a dividir en las diferentes fases en las que se ha desarrol
 En la arquitectura que a continuación explicaré he incluido todos los puntos anteriores pese a que Elasticsearch y Kibana sustituyen a Cassandra y a la webapp como sistemas de almacenamiento y visualización.
 
 La arquitectura esta dividida en 3 capas:
+
 1. Procesamiento 
 	* real-time
 	* batch
 2. Indexación y/o persistencia
 3. Visualización de analíticas
 
-####1. Procesamiento
+#### 1. Procesamiento
 
 	##### real-time
+
 	Antes del procesamiento suele haber una capa de ingestión que para este proyecto no ha sido necesario implementar. Por lo tanto he incluido la fase de ingestión en la capa de procesamiento ya que Spark Streaming recoge los eventos directamente de la fuente y los procesa.
 
 	En el caso de usar **Cassandra** como sistema de persistencia de datos, tendríamos un **job de Spark Streaming** que captura los eventos de 1usagov. Hace uso de Spark SQL para agregar la información según las unidades de tiempo (segundo y minuto) e igualmente por (segundo, minuto y país). Finalmente guarda en Cassandra en la conlumnfamilie que le corresponda, ya que para cada agregación existe una column familie distinta.
@@ -59,17 +61,18 @@ La arquitectura esta dividida en 3 capas:
 	El código de esta parte se encuentra en la carpeta **"streaming"**. Es un proyecto IntelliJ Idea que utiliza maven como gestor de dependencias y está codificado en Scala.
 
 	##### batch
+	
 	El proceso batch trata de agregar la información almacenada en HDFS mediante Spark SQL para posteriormente indexarla con Elasticsearch. Igualmente se enriquece el dato para que se produzca una indexacion time-based. 
 
 	El código se encuentra en la carpeta **"batch"**. Es un proyecto IntelliJ mavenizado y codificado en Scala.
 
-####2. Indexación y/o persistencia
+#### 2. Indexación y/o persistencia
 
 
 
     
 
-####3. Visualización de analíticas
+#### 3. Visualización de analíticas
 
     
 
