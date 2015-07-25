@@ -64,13 +64,13 @@ En el caso de **Elasticsearch**, hay otro job Spark Streaming llamado `UsagovStr
 * parsear el campo con la URL para obtener el dominio y así poder agrupar y sacar analíticas
 * invertir las coordenadas del campo que contiene la geolocalización, ya que Elasticsearch invierte la latitud y la longitud si viene como un tipo array
 
-El código de esta parte se encuentra en la carpeta **`"streaming"`**. Es un proyecto IntelliJ que utiliza maven como gestor de dependencias y está codificado en Scala.
+El código de esta parte se encuentra en la carpeta **`streaming`**. Es un proyecto IntelliJ que utiliza maven como gestor de dependencias y está codificado en Scala.
 
 #### BATCH
 
 El proceso batch agrega la información almacenada en HDFS mediante Spark SQL para posteriormente indexarla con Elasticsearch. Igualmente se enriquece el dato añadiendo una campo `@timestamp` con la fecha del día de ejecución. A parte se usa un index distinto por cada una de las queries que se han implementado.
 
-Esto se hace en un job llamdo `UsagovBatchElasticsearch` y el código se encuentra en la carpeta **`"batch"`**. Es un proyecto IntelliJ mavenizado y codificado en Scala.
+Esto se hace en un job llamdo `UsagovBatchElasticsearch` y el código se encuentra en la carpeta **`batch`**. Es un proyecto IntelliJ mavenizado y codificado en Scala.
 
 ### 2. Indexación y/o persistencia
 
@@ -80,13 +80,13 @@ Como se han usado dos metodologías muy diferentes, explico las dos:
 
 #### CASSANDRA
 
-Cassandra se ha utilizado para persistir las agregaciones que se realizan en el job Spark llamado `UsagovStreamingCassandra`. Para ello se ha creado un job previo de configuración de Cassandra, también de Spark, llamado `UsagovSparkCassandraSetup` en el que se crea el `keyspace` `"usagov"` y una column family por cada una de las queries que la web necesita, ya que Cassandra usa un paradigma `query driven desing`.
+Cassandra se ha utilizado para persistir las agregaciones que se realizan en el job Spark llamado `UsagovStreamingCassandra`. Para ello se ha creado un job previo de configuración de Cassandra, también de Spark, llamado `UsagovSparkCassandraSetup` en el que se crea el `keyspace` `"usagov"` y una column family por cada una de las queries que la web necesita, ya que Cassandra usa el paradigma `query driven desing`.
 
-El código se encuentra en la carpeta **`"streaming"`**.
+El código se encuentra en la carpeta **`streaming`**.
 
 Cassandra también se ha usado para la renderización de los resultados. Esta parte consiste en una webapp que hace uso de Servlets de Java para conectarse a Cassandra y serializar el resultado de las consultas en JSON y así poder enviar los datos a la web. 
 
-El código se encuentra en la carpeta `**"webapp"**`. Es un proyecto IntelliJ mavenizado y codificado en Java.
+El código se encuentra en la carpeta **`webapp`**. Es un proyecto IntelliJ mavenizado y codificado en Java.
 
 #### ELASTICSEARCH
 
@@ -219,7 +219,7 @@ La base de datos elegida en una primera instancia fue Cassandra, ya que aporta t
 6. Implementar un script de ejecucion con el orden correcto en el que se tienen que lanzar los jobs para poder visualizar los resultados.
 
 
-## Cosas aprendidas
+## Aprendizaje
 
 
 
