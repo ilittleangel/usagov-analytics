@@ -56,22 +56,102 @@ La arquitectura esta dividida en 3 capas:
 
 Antes del procesamiento suele haber una capa de ingestión que para este proyecto no ha sido necesario implementar. Por lo tanto he incluido la fase de ingestión en la capa de procesamiento ya que Spark Streaming recoge los eventos directamente de la fuente y los procesa.
 
-En el caso de usar **Cassandra** como sistema de persistencia de datos, tendríamos un job de Spark Streaming que captura los eventos de 1usagov. Hace uso de Spark SQL para agregar la información según las unidades de tiempo (segundo y minuto) e igualmente por (segundo, minuto y país). Finalmente guarda en Cassandra en la conlumnfamilie que le corresponda, ya que para cada agregación existe una column familie distinta.
+En el caso de usar **Cassandra** como sistema de persistencia de datos, tendríamos un job de Spark Streaming llamado `UsagovStreamingCassandra` que captura los eventos de 1usagov. Hace uso de Spark SQL para agregar la información según las unidades de tiempo (segundo y minuto) e igualmente por (segundo, minuto y país). Finalmente guarda en Cassandra en la conlumn familie que le corresponda, ya que para cada agregación existe una column familie distinta.
 
-En el caso de **Elasticsearch**, hay otro job Spark Streaming recibe el stream de 1usagov de la misma forma pero en este caso se hacen una serie de transformaciones sobre cada evento, que permite a Elasticsearch, indexar los eventos basándose en un patrón time-based y así poder visualizar los datos en una linea temporal.
+En el caso de **Elasticsearch**, hay otro job Spark Streaming llamado `UsagovStreamingElasticsearch` que recibe el stream de 1usagov de la misma forma pero en este caso se hacen una serie de transformaciones sobre cada evento, que permite a Elasticsearch, indexar los eventos basándose en un patrón time-based y así poder visualizar los datos en una linea temporal. Mas concretamente estas transformaciones consisten en enriquecer el dato de la siguiente forma: 
+* remplazar el nombre de cada uno de los campos del JSON, por nombres intiutivos que luego se usaran para las busquedas en Elasticsearch
+* añadir un campo `@timestamp` con la fecha del día que se esta procesando en formato `"yyyy-MM-dd'T'HH:mm:ss'Z'"`, para que Elasticsearch lo indexe como un campo tipo date y así configurar un `index pattern time-based`
+* parsear el campo con la URL para obtener el dominio y así poder agrupar y sacar analíticas
+* invertir las coordenadas del campo que contiene la geolocalización, ya que Elasticsearch invierte la latitud y la longitud si viene como un tipo array
 
-El código de esta parte se encuentra en la carpeta **"streaming"**. Es un proyecto IntelliJ que utiliza maven como gestor de dependencias y está codificado en Scala.
+El código de esta parte se encuentra en la carpeta `**"streaming"**`. Es un proyecto IntelliJ que utiliza maven como gestor de dependencias y está codificado en Scala.
 
 #### BATCH
 
-El proceso batch trata de agregar la información almacenada en HDFS mediante Spark SQL para posteriormente indexarla con Elasticsearch. Igualmente se enriquece el dato para que se produzca una indexacion time-based. 
+El proceso batch agrega la información almacenada en HDFS mediante Spark SQL para posteriormente indexarla con Elasticsearch. Igualmente se enriquece el dato añadiendo una campo `@timestamp` con la fecha del día de ejecución. A parte se usa un index distinto por cada una de las queries que se han implementado.
 
-El código se encuentra en la carpeta **"batch"**. Es un proyecto IntelliJ mavenizado y codificado en Scala.
+Esto se hace en un job llamdo `UsagovBatchElasticsearch` y el código se encuentra en la carpeta `**"batch"**`. Es un proyecto IntelliJ mavenizado y codificado en Scala.
 
 ### 2. Indexación y/o persistencia
 
+Esta capa corresponde con el sistema de almacenamiento. Se ha dividido en una capa independiente para enfatizar la metodología usada para la persistencia y renderización de los datos. 
+
+Como se han usado dos metodologías muy diferentes, explico las dos:
+
+#### CASSANDRA
+
+Cassandra se ha utilizado para persistir las agregaciones que se realizan en el job Spark llamado `UsagovStreamingCassandra`. Para ello se ha creado un job previo de configuración de Cassandra, también de Spark, llamado `UsagovSparkCassandraSetup` en el que se crea el `keyspace` `"usagov"` y una column family por cada una de las queries que la web necesita, ya que Cassandra usa un paradigma `query driven desing`.
+
+El código se encuentra en la carpeta `**"streaming"**`.
+
+Cassandra también se ha usado para la renderización de los resultados. Esta parte consiste en una webapp que hace uso de Servlets de Java para conectarse a Cassandra y serializar el resultado de las consultas en JSON y así poder enviar los datos a la web. 
+
+El código se encuentra en la carpeta `**"webapp"**`. Es un proyecto IntelliJ mavenizado y codificado en Java.
+
+#### ELASTICSEARCH
+
+Se ha utilizado este motor de búsqueda distribuido para indexar cada uno de los eventos capturados por Spark Streaming.
+
+Para dar respuesta tanto a la parte batch como a la parte real-time, se han creado previamente y mediante la API RESTfull de Elasticsearch, dos indices:
+
+1. usagov-streaming
+2. usagov-batch (este contiene dos `_type`, uno por cada query que se ha pretendido responder)
+
+Antes de ejecutar la aplicación es necesario crear ambos índices mediante el siguiente las siguientes peticiones:
+
+```
+# crea un index llamado "usagov-streaming" cuyo campo "location" es de tipo "geo_point"
+curl -XPUT 'localhost:9200/usagov-streaming?pretty' -d '
+{
+    "mappings" : {
+      "data": {
+        "properties": {
+          "location": {
+            "type": "geo_point",
+            "lat_lon": true,
+            "geohash": true
+          }
+        }
+      }
+    }
+}'
+```
+Para el índice `usagov-streaming` solo es necesario indicar explícitamente a Elasticsearch que el datatype del campo `location` sea de tipo `geo_point` para que cuando lo indexe le asigne ese tipo. De esta forma se puede aplicar una función geo_hash que solo se aplica a campos de tipo `geo_point`. Esta función va a permitir agrupar puntos en un mapa y así poder contabilizar múltiples cliks en una misma celda dentro de un mapa.
+
+```
+curl -XPUT 'localhost:9200/usagov-batch?pretty' -d '
+{
+    "mappings" : {
+      "query1": {
+        "properties": {
+          "hour": {
+            "type": "date",
+            "format": "HH"
+          }
+        }
+      },
+      "query2": {
+        "properties": {
+          "hour": {
+            "type": "date",
+            "format": "HH"
+          }
+        }
+      }
+    }
+}'
+```
+Para el índice `usagov-batch` se ha mapeado el campo `hour` como tipo `date`, para luego poder hacer series temporales por hora.
 
 ### 3. Visualización de analíticas
+
+Según la arquitectura hay dos formas de visualizar los datos: mediante una web y mediante Kibana.
+
+#### WEBAPP
+
+Esta parte consiste en
+
+#### KIBANA
 
 
 
@@ -85,9 +165,9 @@ Además de ser un framework de computación distribuida Open Source, tiene la ve
 
 En cuanto a la codificación de los jobs, se ha elegido utilizar Scala, ya que tiene su propia Api Spark y al cual se le puede importar librerías Java.
 
-Para conectar la base de datos Cassandra con Spark se ha utilizado la libreria `spark-cassandra-connector` de Datastax con el que se puede almacenar directamente un RDD a una tabla de forma distribuida.
+Para conectar Cassandra con Spark se ha utilizado la librería `spark-cassandra-connector` de Datastax con el que se puede almacenar directamente un RDD a una tabla de forma distribuida.
 
-Para conectar la base de datos Cassandra con Spark se ha utilizado la libreria `elasticsearch-spark` de Elasticsearch con el que se puede almacenar directamente un RDD a un índice de forma distribuida.
+Para conectar Elasticsearch con Spark se ha utilizado la librería `elasticsearch-spark` de Elasticsearch con el que se puede almacenar directamente un RDD a un índice de forma distribuida.
 
 ### Spark Streaming
 
@@ -95,8 +175,12 @@ Para conectar la base de datos Cassandra con Spark se ha utilizado la libreria `
 ### Spark SQL
 
 
+### HDFS
+
+
 ### Cassandra
 
+La base de datos elegida en una primera instancia fue Cassandra, ya que aporta tiempos de escritura muy rápidos y permite escalabilidad sin tener un punto único de fallo. 
 
 ### Elasticsearch
 
@@ -104,7 +188,7 @@ Para conectar la base de datos Cassandra con Spark se ha utilizado la libreria `
 ### Java Servlets
 
 
-### Javascript
+### Kibana
 
 
 
@@ -122,12 +206,18 @@ Para conectar la base de datos Cassandra con Spark se ha utilizado la libreria `
 
 
 
-## Analisis de escalabilidad
+## Análisis de escalabilidad
 
 
 
 ## Posibles mejoras
 
+1. Un webcrapper que recoja todos los archivos históricos de measured voice y los persista en HDFS.
+2. El job correspondiente con el proceso real-time, que persistiera los datos en HDFS, en ficheros compuestos por los eventos generados en una hora. Cada día un directorio en HDFS con 24 ficheros que contendrían todos los clicks de ese día.
+3. El job correspondiente con el proceso batch, tendría que leer los eventos del directorio HDFS correspondiente con el día de ejecución e indexar en Elasticserach el análisis diario de accesos a dominios de EEUU.
+4. Un job nuevo de tipo offline, que procesara los datos de todos los directorios almacenados en HDFS, es decir, de todos los días desde la primera vez que se ejecutó la aplicación. Esto seria para realizar procesamiento analítico de tipo predictivo con algoritmos de machine-learning aplicando técnicas de clustering como por ejemplo el método Kmeans. Las predicciones podrían ir desde predecir que ciudad del mundo tendrá mas accesos a una hora determindada, hasta por ejemplo determinar a que hora del día se llegará a una número de acortamientos de un dominio determinado.
+5. Implementar un script de instalacion de todos los componentes necesarios para la ejecucion de la aplicación.
+6. Implementar un script de ejecucion con el orden correcto en el que se tienen que lanzar los jobs para poder visualizar los resultados.
 
 
 ## Cosas aprendidas
