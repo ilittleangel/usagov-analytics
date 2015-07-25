@@ -92,7 +92,7 @@ El código se encuentra en la carpeta **`webapp`**. Es un proyecto IntelliJ mave
 
 Se ha utilizado este motor de búsqueda distribuido para indexar cada uno de los eventos capturados por Spark Streaming.
 
-Para dar respuesta tanto a la parte batch como a la parte real-time, se han creado previamente y mediante la API RESTfull de Elasticsearch, dos indices:
+Para dar respuesta tanto a la parte batch como a la parte real-time, se han creado previamente y mediante la RESTful API de Elasticsearch, dos indices:
 
 1. usagov-streaming
 2. usagov-batch (este contiene dos `_type`, uno por cada query que se ha pretendido responder)
@@ -144,11 +144,19 @@ Para el índice `usagov-batch` se ha mapeado el campo `hour` como tipo `date`, p
 
 ### 3. Visualización de analíticas
 
-Según la arquitectura hay dos formas de visualizar los datos: mediante una web y mediante Kibana.
+Según la arquitectura, la capa de visualización contiene dos formas de visualizar los datos: mediante una web y mediante Kibana.
 
 #### WEBAPP
 
-Esta parte consiste en
+Este módulo está divido en los siguientes componentes:
+* Pagina Web donde se muestran los datos
+* Webapp con Servlets de Java que recuperan los datos de Cassandra
+* Javascript's que hacen las peticiones a los servlets y renderizan los datos en gráficas
+* Servidor de aplicaciones Tomcat 7 donde se ejecutan las webapps
+
+El código se encuentra en la carpeta **`webapp`**. Es un proyecto IntelliJ mavenizado y esta codificado en Java, Javascript y HTML.
+
+En esta parte se han obtenido gráficas con cierta limitacion respecto a la siguiente opcion de visualizacion.
 
 #### KIBANA
 
@@ -196,6 +204,14 @@ La base de datos elegida en una primera instancia fue Cassandra, ya que aporta t
 
 
 ## Resultados
+
+**WEBAPP**
+* Se ha representado un contador con el total de clicks diario
+* Diagramas de barras con el total de clicks diarios por país
+![Screenshot](/screenshots/webapp-barchart-toppaises.png?raw=true)
+* Un top list de los accesos a dominios representando un contador total por dominio
+![Screenshot](/screenshots/webapp-toplist-dominios.png?raw=true)
+* Y por último, la hacer click en un dominio, se abre otra pagina donde se representa la evolucion diaria de clicks para ese dominio
 
 **STREAMING DASHBOARD**
 ![Screenshot](/screenshots/kibana-dashboard-usagov-streaming.png?raw=true)
