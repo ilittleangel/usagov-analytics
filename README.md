@@ -71,20 +71,40 @@ El código se encuentra en la carpeta **"batch"**. Es un proyecto IntelliJ maven
 ### 2. Indexación y/o persistencia
 
 
-
-    
-
 ### 3. Visualización de analíticas
 
-    
 
-## Elección de herramientas de procesamiento
 
-Para los procesos offline que se han construido, se ha decidido utilizar Spark, ya que es una herramienta emergente que aspira a sustituir a MapReduce, al poder controlar el almacenamiento en memoria o en disco de las estructuras de datos distribuidos, llamados RDDs, ofreciendo una velocidad mayor puesto que ahorra accesos a memoria persistente.
+## Elección de herramientas
 
-En cuanto a la codificación de los jobs, se ha elegido utilizar Scala, un lenguaje sencillo que puede importar librerías Java y que tiene su propia API Spark.
+### Spark
 
-Para conectar la base de datos Cassandra con Spark se ha utilizado el plugin cassandra-spark de la empresa Datastax con el que se puede almacenar directamente un RDD a una tabla de forma distribuida.
+Tanto para los procesos realtime como para los procesos offline que se han construido, se ha decidido utilizar Spark, ya que es una herramienta emergente que aspira a sustituir a MapReduce, al poder controlar el almacenamiento en memoria o en disco de las estructuras de datos distribuidos, llamados RDDs, ofreciendo una velocidad mayor puesto que ahorra accesos a memoria persistente.
+
+Además de ser un framework de computación distribuida Open Source, tiene la ventaja de contener un stack de herramientas de alto nivel que incluye Spark SQL, MLlib para machine learning, GraphX para computación de grafos y Spark Streaming. Todas estas librerías se pueden combinar sin problemas en la misma aplicación.
+
+En cuanto a la codificación de los jobs, se ha elegido utilizar Scala, ya que tiene su propia Api Spark y al cual se le puede importar librerías Java.
+
+Para conectar la base de datos Cassandra con Spark se ha utilizado la libreria `spark-cassandra-connector` de Datastax con el que se puede almacenar directamente un RDD a una tabla de forma distribuida.
+
+Para conectar la base de datos Cassandra con Spark se ha utilizado la libreria `elasticsearch-spark` de Elasticsearch con el que se puede almacenar directamente un RDD a un índice de forma distribuida.
+
+### Spark Streaming
+
+
+### Spark SQL
+
+
+### Cassandra
+
+
+### Elasticsearch
+
+
+### Java Servlets
+
+
+### Javascript
 
 
 
@@ -92,7 +112,7 @@ Para conectar la base de datos Cassandra con Spark se ha utilizado el plugin cas
 
 
 
-## Resultados (capturas de pantalla de los dashboards)
+## Resultados
 
 **STREAMING DASHBOARD**
 ![Screenshot](/screenshots/kibana-dashboard-usagov-streaming.png?raw=true)
@@ -114,12 +134,12 @@ Para conectar la base de datos Cassandra con Spark se ha utilizado el plugin cas
 
 
 
-## Ubicacion codigo fuente
+## Ubicación código fuente
 
 
 
-## Explicacion codigo fuente
+## Explicación código fuente
 
-division en bloques funcionales
+división en bloques funcionales
 
 
