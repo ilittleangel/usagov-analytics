@@ -50,31 +50,31 @@ La arquitectura esta dividida en 3 capas:
 
 ![Screenshot](/screenshots/arquitectura-usagov-transparent.png?raw=true)
 
-#### 1. Procesamiento
+### 1. Procesamiento
 
-##### real-time
+#### REAL-TIME
 
 Antes del procesamiento suele haber una capa de ingestión que para este proyecto no ha sido necesario implementar. Por lo tanto he incluido la fase de ingestión en la capa de procesamiento ya que Spark Streaming recoge los eventos directamente de la fuente y los procesa.
 
-En el caso de usar **Cassandra** como sistema de persistencia de datos, tendríamos un **job de Spark Streaming** que captura los eventos de 1usagov. Hace uso de Spark SQL para agregar la información según las unidades de tiempo (segundo y minuto) e igualmente por (segundo, minuto y país). Finalmente guarda en Cassandra en la conlumnfamilie que le corresponda, ya que para cada agregación existe una column familie distinta.
+En el caso de usar **Cassandra** como sistema de persistencia de datos, tendríamos un job de Spark Streaming que captura los eventos de 1usagov. Hace uso de Spark SQL para agregar la información según las unidades de tiempo (segundo y minuto) e igualmente por (segundo, minuto y país). Finalmente guarda en Cassandra en la conlumnfamilie que le corresponda, ya que para cada agregación existe una column familie distinta.
 
-En el caso de **Elasticsearch**, hay otro **job Spark Streaming** recibe el stream de 1usagov de la misma forma pero en este caso se hacen una serie de transformaciones sobre cada evento, que permite a Elasticsearch, indexar los eventos basándose en un patrón time-based y así poder visualizar los datos en una linea temporal.
+En el caso de **Elasticsearch**, hay otro job Spark Streaming recibe el stream de 1usagov de la misma forma pero en este caso se hacen una serie de transformaciones sobre cada evento, que permite a Elasticsearch, indexar los eventos basándose en un patrón time-based y así poder visualizar los datos en una linea temporal.
 
-El código de esta parte se encuentra en la carpeta **"streaming"**. Es un proyecto IntelliJ Idea que utiliza maven como gestor de dependencias y está codificado en Scala.
+El código de esta parte se encuentra en la carpeta **"streaming"**. Es un proyecto IntelliJ que utiliza maven como gestor de dependencias y está codificado en Scala.
 
-##### batch
+#### BATCH
 
 El proceso batch trata de agregar la información almacenada en HDFS mediante Spark SQL para posteriormente indexarla con Elasticsearch. Igualmente se enriquece el dato para que se produzca una indexacion time-based. 
 
 El código se encuentra en la carpeta **"batch"**. Es un proyecto IntelliJ mavenizado y codificado en Scala.
 
-#### 2. Indexación y/o persistencia
+### 2. Indexación y/o persistencia
 
 
 
     
 
-#### 3. Visualización de analíticas
+### 3. Visualización de analíticas
 
     
 
@@ -93,6 +93,12 @@ Para conectar la base de datos Cassandra con Spark se ha utilizado el plugin cas
 
 
 ## Resultados (capturas de pantalla de los dashboards)
+
+**STREAMING DASHBOARD**
+![Screenshot](/screenshots/kibana-dashboard-usagov-streaming.png?raw=true)
+
+**BATCH DASHBOARD**
+![Screenshot](/screenshots/kibana-dashboard-usagov-batch1.png?raw=true)
 
 
 
