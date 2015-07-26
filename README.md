@@ -7,8 +7,7 @@ Este repositorio contiene una aplicación para el análisis real-time y análisi
 La información contenida en cada evento o click, es información sobre la geo-localización de un usuario que ha acortado una url, sobre el navegador utilizado, sobre el instante de tiempo en el que se produce el evento, la ciudad, el país y una serie de campos que permiten hacer analíticas en tiempo real. Estos eventos están serializados en formato JSON, lo que hace sencilla la interacción con las tecnologías de procesado y persistencia de los datos.
 
 ### Tabla de contenidos
-**[Tecnologías Big Data utilizadas](#Tecnologías-Big-Data-utilizadas)**
-**[Evolución en el desarrollo del proyecto](#Evolución-en-el-desarrollo-del-proyecto)**
+**[Evolucion proyecto](#Evolucion-proyecto)**
 
 
 ## Tecnologías Big Data utilizadas
