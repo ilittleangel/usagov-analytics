@@ -373,9 +373,9 @@ Su estructura es la siguiente
 
 ## Análisis del código fuente
 
-#### proyecto `usagov-analytics-batch`
+### Proyecto `usagov-analytics-batch`
 
-Antes de empezar con el codigo quiero indicar las librerías incluidas en el ´pom.xml´:
+Antes de empezar con el código quiero indicar las librerías incluidas en el ´pom.xml´:
 ```
     <properties>
         <scala.version>2.10.4</scala.version>
@@ -406,9 +406,12 @@ Antes de empezar con el codigo quiero indicar las librerías incluidas en el ´p
     </dependencies>
 ```
 
-##### job `UsagovBatchElasticsearch`
 
-Lo primero es la creacion del `SparkContext` donde hay que indicar la ubicación del servidor Elasticsearch, ip y puerto. En este caso `localhost:9200`. A parte también he indicado que cree el index, en el caso de no encontrar donde indexar los documentos. Puesto que vamos a usar Spark SQL es necesario crear el `SQLContext`:
+#### Job `UsagovBatchElasticsearch`
+
+Este job se encarga de procesar los ficheros históricos almacenados en HDFS e indexar los resultados en ES.
+
+Lo primero es la creacion del `SparkContext` donde hay que indicar la ubicación del servidor ES, ip y puerto. En este caso `localhost:9200`. A parte también he indicado que cree el index, en el caso de no encontrar donde indexar los documentos. Puesto que vamos a usar Spark SQL es necesario crear el `SQLContext`:
 ```scala
 val sparkConf = new SparkConf()
     .setAppName("usagov-batch")
@@ -488,10 +491,11 @@ Por último, se indexa el RDD en ES en el indice `usagov-batch` tipo `query1`
 EsSpark.saveJsonToEs(query1RDD,"usagov-batch/query1")
 ```
 
-Para el rsto de queries seria igual
+Para el resto de queries seria igual.
 
 
-#### proyecto `usagov-analytics-streaming`
+
+### Proyecto `usagov-analytics-streaming`
 
 En el `pom.xml` hay que añadir las librerías que se van a usar:
 ```
@@ -534,9 +538,55 @@ En el `pom.xml` hay que añadir las librerías que se van a usar:
     </dependencies>
 ```
 
-##### job `UsagovStreamingElasticsearch`
 
-Creamos el SparkContext con la configuracion necesaria para poder conectar a ES. Indicamos que el servidor está en `localhost:9200` y que el cree el indice si no existe. Ademas creamos nuestro StreamingContext con batches de 5 segundos:
+#### Clase `UsagovReceiver`
+
+Primero comienzo explicando que la clase `UsagovReciever` es un custom reciever de Spark Streaming y necesaria para capturar los eventos del feed 1usagov. Para implementar un custom recierver la clase tiene que extender de Reciever: 
+```scala
+class UsagovReceiver extends Receiver[String](StorageLevel.MEMORY_AND_DISK_2) with Logging {
+```
+
+Contiene un método `onStart()` que inicia el hilo que recibe los datos:
+```scala
+def onStart() {
+    new Thread("Usagov Receiver") {
+      override def run() {
+        receive()
+      }
+    }.start()
+}
+``` 
+
+Contiene otro método `receive()` que crea un BufferedReader para recibir los datos de la URL donde se encuentra el feed 1usagov. Recibe datos del BufferedReader hasta que es parado:
+```scala
+private def receive() {
+	var userInput: String = null
+    try {
+      val reader = new BufferedReader(scala.io.Source.fromURL("http://developer.usa.gov/1usagov").bufferedReader())
+      userInput = reader.readLine()
+      while (!isStopped && userInput != null) {
+        store(userInput)
+        userInput = reader.readLine()
+      }
+      reader.close()
+      logInfo("Stopped receiving")
+      restart("Trying to connect again")
+    } catch {
+      case e: java.net.ConnectException =>
+        restart("Error connecting to ", e)
+      case t: Throwable =>
+        restart("Error receiving data", t)
+      case ex: FileNotFoundException => println("Couldn't find that file.")
+    }
+}
+``` 
+
+
+#### Job `UsagovStreamingElasticsearch`
+
+Este job captura los eventos del feed 1usagov y los indexa en ES.
+
+Creamos el SparkContext con la configuración necesaria para poder conectar a ES. Indicamos que el servidor está en `localhost:9200` y que el cree el indice si no existe. Ademas creamos nuestro StreamingContext con batches de 5 segundos:
 ```scala
 val sparkConf = new SparkConf()
     .setAppName(getClass.getSimpleName)
@@ -550,50 +600,143 @@ val sc = new SparkContext(sparkConf)
 val ssc = new StreamingContext(sc, Seconds(5))
 ```
 
-Configuramos el timezone a GMT+0 que es como nos van a llegar los eventos. Asi a la hora de hacer un ´new Date()´ no nos lo hace con el timezone de nuestro entorno. Ademas almacenamos el formato con el que vamos a crear los `Date`:
+Configuramos el timezone a GMT+0 que es como nos van a llegar los eventos. Así a la hora de hacer un `new Date()` no nos lo hace con el timezone de nuestro entorno. Ademas almacenamos el formato con el que vamos a crear los `Date`:
 ```scala
 TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
 val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
 ```
 
+Creamos un Discretized Stream `usagovDSStream` instanciando la clase `UsagovReciever`. Esto nos crea un `DStream` que contiene los RDD que a su vez contendran los eventos o JSONs recuperados por el `DStream`. Por lo que por cada RDD hacemos una serie de transformaciones:
+- reemplazar el nombre original de cada campo del JSON por un nombre descriptivo.
+- reemplazar `_id` por `id` para que ES no lo intente indexar con ese `_id` y genere uno aleatorio.
+- invertir las coordenadas del campo `location`
+- parsear el campo `url` para obtener el campo `dominio`
+- generar un campo `@timestamp` 
+- construir el string `salida`  
 ```scala
+val usagovDStream = ssc.receiverStream(new UsagovReceiver())
+    .foreachRDD { rdd =>
+
+     val documentsRDD = rdd.filter(_.nonEmpty)
+       .map(_.replaceAll("\"_id\":", "\"id\":")) 
+       .map(_.replaceAll("\"a\":", "\"user_agent\":"))
+       .map(_.replaceAll("\"al\":", "\"accept_language\":"))
+       .map(_.replaceAll("\"c\":", "\"country_code\":"))
+       .map(_.replaceAll("\"cy\":", "\"geo_city_name\":"))
+       .map(_.replaceAll("\"g\":", "\"global_bitly_hash\":"))
+       .map(_.replaceAll("\"gr\":", "\"geo_region\":"))
+       .map(_.replaceAll("\"h\":", "\"encoding_user_bitly_hash\":"))
+       .map(_.replaceAll("\"hc\":", "\"time_hash_was_created\":"))
+       .map(_.replaceAll("\"hh\":", "\"short_url_cname\":"))
+       .map(_.replaceAll("\"l\":", "\"encoding_user_login\":"))
+       .map(_.replaceAll("\"nk\":", "\"known_user\":"))
+       .map(_.replaceAll("\"r\":", "\"referring_url\":"))
+       .map(_.replaceAll("\"tz\":", "\"timezone\":"))
+       .map(_.replaceAll("\"u\":", "\"url\":"))
+       .map( linea => {
+        // location
+        val location = linea.split("\"ll\":")(1).split("}")(0) 
+        val latitude = location.split(",")(0).replace("[","") 
+        val longitude = location.split(",")(1).replace("]","") 
+        val locationInv = "\"location\":[" + longitude + "," + latitude + "]" 
+        // domain
+        val url = linea.split("\"url\":")(1).split(",")(0)
+        val dominio = "\"domain\":\"" + getDomain(url) + "\""
+        // timestamp
+        val ts = linea.split("\"t\":")(1).split(",")(0) 
+        val date = format.format(new Date(ts.toLong * 1000L))  
+        val timestamp = "\"@timestamp\":\"" + date + "\"" 
+        // salida
+        val sinllave = linea.substring(1)
+        val salida = "{" + timestamp + "," + locationInv + "," + dominio + "," + sinllave 
+        salida 
+	})
+```
+
+Dentro del bucle `foreachRDD` indexamos los RDD en formato JSON en el índice `usagov-streaming` type `data`:
+```scala
+documentsRDD.collect.foreach(println)
+EsSpark.saveJsonToEs(documentsRDD,"usagov-streaming/data")
+```
+
+Por último, indicar al `StreamingContext` que puede comenzar e indicar que se ejecute durante 60 minutos. Posteriormente le decimos que cuando le llegue la señal de `stop` que finalice de forma segura y sin perder eventos:
+```scala
+ssc.start()
+ssc.awaitTermination(60 * 60 * 1000)
+ssc.stop(true,true)
+```
+
+
+#### Job `UsagovSparkCassandraSetup`
+
+Este job se encarga de crear en Cassandra el `Keyspace` y las `column families`. Por lo tanto este job tiene que ser ejecutado al lanzar la aplicacion por primera vez.
+
+Como en todos, configuramos el SparkContext donde indicamos la ubicaión del servidor de Casandra, en este caso `localhost` y por defecto el puerto `9000` que no es necesario expecificar:
+```scala
+val sparkConf = new SparkConf()
+    .setAppName(getClass.getSimpleName)
+    .setMaster("local[2]")
+    .set("spark.cassandra.connection.host", "localhost")
+val sc = new SparkContext(sparkConf)
+```
+
+Abrimos una session en Cassandra:
+```scala
+CassandraConnector(sparkConf).withSessionDo { session =>
+```
+
+Y ejecutamos las sentencia `CQL` para crear el `keyspace` y las `column familes`:
+```scala
+session.execute("DROP KEYSPACE IF EXISTS usagov")
+session.execute("CREATE KEYSPACE usagov WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1 }")
+session.execute("DROP TABLE IF EXISTS usagov.topdomainseconds")
+session.execute(
+      """
+        |CREATE TABLE usagov.topdomainseconds (
+        | date VARCHAR,
+        | domain VARCHAR,
+        | time VARCHAR,
+        | contador INT,
+        |PRIMARY KEY(date, domain, time, contador))
+      """.stripMargin)
+```
+
+Asi con todas las `column families`. de nuestro modelo
+
+
+#### Object `UsagovClasses`
+
+
+
+
+#### Job `UsagovStreamingCassandra`
+
+
+
+### Proyecto `usagov-analytics-webapp`
+
+
+```java
 
 ```
 
-```scala
+```java
 
 ```
 
-```scala
+```java
 
 ```
 
-
-
-#### proyecto `usagov-analytics-webapp`
-
-
-```scala
+```java
 
 ```
 
-```scala
+```java
 
 ```
 
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
+```java
 
 ```
 
