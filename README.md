@@ -256,7 +256,6 @@ Una vez instalado y arrancado, Kibana se encuentra escuchando en el puerto 5601,
 
 
 ![Screenshot](/screenshots/pruebas-elasticsearch.png?raw=true) 
-![Screenshot](/screenshots/pruebas-cassandra.png?raw=true)
 
 **Streaming**
 
