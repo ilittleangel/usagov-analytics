@@ -91,11 +91,11 @@ Esto se hace en un job llamdo `UsagovBatchElasticsearch` y el código se encuent
 
 ### 2. Indexación y/o persistencia
 
-Esta capa corresponde con el sistema de almacenamiento. Se ha dividido en una capa independiente para enfatizar la metodología usada para la persistencia e indexación de los datos. 
+Esta capa corresponde con el sistema de almacenamiento. Se ha dividido en una capa independiente para enfatizar en la metodología usada para la persistencia e indexación de los datos. 
 
 Como se han usado dos metodologías muy diferentes, explico las dos:
 
-#### Cassandra
+#### Base de datos NoSQL Cassandra
 
 Cassandra se ha utilizado para persistir las agregaciones que se realizan en el job Spark llamado `UsagovStreamingCassandra`. Para ello se ha creado un job previo de configuración de Cassandra, también de Spark, llamado `UsagovSparkCassandraSetup` en el que se crea el `keyspace` `"usagov"` y una column family por cada una de las queries que la web necesita, ya que Cassandra usa el paradigma `query driven desing`.
 
@@ -105,7 +105,7 @@ Cassandra también se ha usado para la renderización de los resultados. Esta pa
 
 El código se encuentra en la carpeta **`webapp`**. Es un proyecto IntelliJ mavenizado y codificado en Java.
 
-#### Elasticsearch
+#### Buscador distruido Elasticsearch
 
 Se ha utilizado este motor de búsqueda distribuido para indexar cada uno de los eventos capturados por Spark Streaming.
 
@@ -114,7 +114,7 @@ Para dar respuesta tanto a la parte batch como a la parte real-time, se han crea
 1. usagov-streaming
 2. usagov-batch (este contiene dos `_type`, uno por cada query que se ha pretendido responder)
 
-Antes de ejecutar la aplicación es necesario crear ambos índices mediante el siguiente las siguientes peticiones:
+Antes de ejecutar la aplicación sería necesario crear ambos índices mediante las siguientes peticiones:
 
 ```
 curl -XPUT 'localhost:9200/usagov-streaming?pretty' -d '
@@ -175,16 +175,18 @@ El código se encuentra en la carpeta **`webapp`**. Es un proyecto IntelliJ mave
 
 En esta parte se han obtenido gráficas con ciertas limitaciones respecto a la siguiente opción de visualización.
 
-#### Kibana
+#### Dashboards en Kibana
 
 Kibana es una herramienta que tiene una integración perfecta con Elasticsearch. De ahí la necesidad de indexar cada evento para poder construir de una forma sencilla, dashboards intuitivos y agradables para el análisis de los datos. 
 
 En los screenshots que se muestran mas adelante se explicará cada una de las analíticas en tiempo real que Elastisearch y Kibana permiten construir.
 
+Una vez instalado y arrancado, Kibana se encuentra escuchando en el puerto 5601, por lo que podemos acceder escribiendo en el navagador `http://localhost:5601` 
+
 
 ## Elección de herramientas
 
-### Spark
+#### Spark
 
 Tanto para los procesos realtime como para los procesos offline que se han construido, se ha decidido utilizar Spark, ya que es una herramienta emergente que aspira a sustituir a MapReduce, al poder controlar el almacenamiento en memoria o en disco de las estructuras de datos distribuidos, llamados RDDs (Resilient Distributed Dataset), ofreciendo una velocidad mayor puesto que ahorra accesos a memoria persistente.
 
@@ -194,9 +196,9 @@ En cuanto a la codificación de los jobs, se ha elegido utilizar Scala, ya que t
 
 Para conectar Cassandra con Spark se ha utilizado la librería `spark-cassandra-connector` de Datastax con el que se puede almacenar directamente un RDD a una tabla de forma distribuida.
 
-La libreria `elasticsearch-Hadoop` ofrece integración nativa entre Elasticsearch y Apache Spark, con lo que se puede almacenar directamente un RDD a un índice de forma distribuida.
+La librería `elasticsearch-Hadoop` ofrece integración nativa entre Elasticsearch y Apache Spark, con lo que se puede almacenar directamente un RDD a un índice de forma distribuida.
 
-### Spark Streaming
+#### Spark Streaming
 
 Dentro del framework Spark, Spark Streaming es la librería de procesamiento real-time y por tanto ofrece todo el lenguaje del API de Spark. Ha sido elegido porque permite implementar streaming jobs de la misma forma que se escriben batch jobs. 
 
@@ -204,39 +206,58 @@ Al igual que Spark, Spark Streaming ofrece todas las características de un fram
 
 La elección de Spark Streaming como framework de computación real-time, es porque se ajusta perfectamente a las necesidades de analítica que este proyecto necesitaba. 
 
-Para el caso de Cassandra como sistema de persistencia, Spark Streaming ha permitido capturar los eventos del feed 1usagov y procesarlos en ventanas temporales para luego insertar el resultado en la column familie correspondiente. Esto es gracias a la integracion de Spark con Cassandra que ofrece `spark-cassandra-connector`.
+Para el caso de Cassandra como sistema de persistencia, Spark Streaming ha permitido capturar los eventos del feed 1usagov y procesarlos en ventanas temporales para luego insertar el resultado en la column familie correspondiente. Esto es gracias a la integración de Spark con Cassandra que ofrece `spark-cassandra-connector`.
 
 Para el caso de Elasticsearch, Spark tiene una integración perfecta mediante la librería `elasticsearch-spark`. Esto permite indexar RDDs en Elasticsearch de forma muy sencilla.
 
-### Spark SQL
+#### Spark SQL
 
 Spark SQL me ha permitido hacer los cálculos sobre las agrupaciones de eventos con lenguaje SQL. Gracias a la abstracción que ofrece la estructura ´SchemaRDD´ de Spark, se pueden crear tablas a partir de objetos JSON y usar cada campo como elementos de una tabla.
 
-### HDFS
+#### HDFS
 
 Spark también ofrece total integración con Hadoop por lo que almacenar los ficheros históricos de clicks en HDFS, permite distribuir enormes datasets de datos y leer desde Spark de forma también muy sencilla.
 
-### Cassandra
+#### Cassandra
 
 La primera opción al elegir el sistema para persistir los datos fue Cassandra ya que es una base de datos distribuida que aporta tiempos de escritura muy rápidos y permite escalabilidad sin tener un punto único de fallo. 
 
-Spark ofrece, como ya se ha comentado antes, una integración completa con Cassandra. Esto incluye la interaccion mediante `CQL` (Cassandra Query Language). 
+Spark ofrece, como ya se ha comentado antes, una integración completa con Cassandra. Esto incluye la interacción mediante `CQL` (Cassandra Query Language). 
 
-### Elasticsearch
+#### Elasticsearch
 
-Elasticsearch es un servidor de búsqueda distribuido, es decir un buscador big data, basado en Lucene. Esto permite la indexación y búsqueda de texto completo. Elasticsearch provee una interfaz web RESTfull que funciona mediante documentos JSON. 
+Elasticsearch es un servidor de búsqueda distribuido, es decir un buscador Big Data, basado en Lucene. Esto permite la indexación y búsqueda de texto completo. Elasticsearch provee una interfaz web RESTfull que funciona mediante documentos JSON. 
 
 Permite escalabilidad horizontal, alta disponibilidad y analíticas en tiempo real gracias a su velocidad de respuesta. 
 
 Por todas estas características y por la necesidad de indexar la información en este motor de búsqueda para poder construir gráficas analíticas en Kibana, elegí Elasticsearch como sistema de persistencia de los datos.
 
-### Kibana
+#### Kibana
 
-Kibana permite la visualización en tiempo real de datos indexados en Elasticsearch. Permite construir dashboards analíticos de forma muy sencilla. La eleccion de Kibana es por ser una herramienta de referencia en visualizacion real-time, perfecto para el caso de uso de este proyecto.
+Kibana permite la visualización en tiempo real de datos indexados en Elasticsearch. Permite construir dashboards analíticos de forma muy sencilla. La elección de Kibana es por ser una herramienta de referencia en visualización real-time, perfecto para el caso de uso de este proyecto.
 
 
 ## Pruebas
 
+#### Pruebas en el entorno de desarrollo local:
+
+| **streaming jobs**             | tiempo de ejecución mantenido | hora de ejecución | clicks cargados |
+| ------------------------------ |-------------------------------| ----------------- | --------------- |
+| `UsagovStreamingElasticsearch` | 1 h                           | 11:08 am          | -			   |
+| `UsagovStreamingElasticsearch` | 1 h                           |                   | -			   |
+| `UsagovStreamingCassandra`     | 10 min       	             | 10:51 am          | 715			   |
+| `UsagovStreamingCassandra`     | 10 min       	             | 17:00 am          | 715			   |
+
+
+| **batch job**                  | tiempo de ejecución 	| clicks procesados |
+| ------------------------------ |----------------------| ----------------- |
+| `UsagovBatchElasticsearch`     | 12 min      	        | 429,289           |
+| `UsagovBatchElasticsearch`     | - min      	        | cargar  mas dias  |
+
+
+#### Pruebas en un cluster
+
+Las pruebas en entorno distribuido no han sido todavía realizadas
 
 
 ## Resultados
@@ -255,11 +276,13 @@ Kibana permite la visualización en tiempo real de datos indexados en Elasticsea
 
 ![Screenshot](/screenshots/webapp-areachart-evoluciondominio.png?raw=true)
 
-### STREAMING DASHBOARD
+
+
+#### STREAMING DASHBOARD
 
 ![Screenshot](/screenshots/kibana-dashboard-usagov-streaming.png?raw=true)
 
-### BATCH DASHBOARD
+#### BATCH DASHBOARD
 
 ![Screenshot](/screenshots/kibana-dashboard-usagov-batch1.png?raw=true)
 
