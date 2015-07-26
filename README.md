@@ -349,14 +349,111 @@ Sobre Kibana, al funcionar bajo Elasticsearch, tambien escalaría perfectamente.
 
 ## Aprendizaje
 
-
+Durante el diseño e implementacion de este proyecto, se han adquirido diferentes habilidades:
+- Diseñar aplicaciones Big Data de captura y procesado de logs, como lo son los clicks de 1usagov
+- Implementar aplicaciones Big Data con el Framework Spark, Spark Streaming y Spark SQL
+- Implementar aplicaciones con Elasticsearch y Spark
+- Desarrollar visualizaciones en tiempo real con Kibana 
 
 ## Ubicación código fuente
 
+El código fuente del proyecto se encuentra en el repositorio github [usagov-analytics](https://github.com/ilittleangel/usagov-analytics)
+
+Esta dividido en 3 proyectos Maven 
+![Screenshot](/screenshots/usagov-analytics-project-structure.png?raw=true)
+
+- proyecto **`usagov-analytics-batch`** en la carpeta **`batch`**
+- proyecto **`usagov-analytics-streaming`** en la carpeta **`streaming`**
+- proyecto **`usagov-analytics-webapp`** en la carpeta **`webapp`**
+
+Su estructura es la siguiente
+![Screenshot](/screenshots/usagov-analytics-project-structure2.png?raw=true)
+![Screenshot](/screenshots/usagov-analytics-project-structure3.png?raw=true)
 
 
 ## Análisis del código fuente
 
-división en bloques funcionales
+#### proyecto `usagov-analytics-batch`
+
+##### job `UsagovBatchElasticsearch`
+
+Lo primero es la creacion del `SparkContext` donde hay que indicar la ubicación del servidor Elasticsearch, ip y puerto. En este caso `localhost:9200`. A parte también he indicado que cree el index, en el caso de no encontrar donde indexar los documentos. Puesto que vamos a usar Spark SQL es necesario crear el `SQLContext`:
+```scala
+val sparkConf = new SparkConf()
+    .setAppName("usagov-batch")
+    .setMaster("local[2]")
+    .setJars(List("/home/cloudera/Desktop/usagov-analytics-angelrojo/batch/target/usagov-analytics-batch-1.0.jar"))
+    .setSparkHome("$SPARK_HOME")
+    .set("es.nodes", "localhost")
+    .set("es.port", "9200")
+    .set("es.index.auto.create", "true")
+    .set("es.field.read.empty.as.null", "false")
+
+val sc = new SparkContext(sparkConf)
+val sqlContext = new SQLContext(sc)
+```
+
+A continuación he registrado en `SQLContext` las funciones que voy a usar dentro de las sentencias `sql`. Estas funciones se encuentran en otro `object` de Scala llamado `UsagovUtils` dentro del mismo `package`:
+```scala
+sqlContext.registerFunction("getTimeFromEpoch", getTimeFromEpoch _)
+sqlContext.registerFunction("getToday", getToday _)
+```
+
+Lectura de los ficheros históricos Measured Voice, alamcenados en HDFS:
+```scala
+val files = "hdfs://quickstart.cloudera:8020/user/cloudera/usagov/"
+```
+
+Filtrado de los eventos que no sean clicks de acortaminto de URLs:
+```scala
+val lines = sc.textFile(files)
+    		  .filter(_.contains("\"h\":"))
+              .map(_.replace(" ", ""))
+```
+
+Eliminar el campo `"ll"` del JSON correspondiente con un click, pues produce un error cuando no existe el campo:
+```scala
+lines.map(line => {
+	var salida = line
+	if (line.nonEmpty && line.contains("\"ll\":")) {
+		val ll = line.split("\"ll\"")(0)
+		salida = ll + "}"
+	}
+	salida.replace(",}", "}")
+})
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+
+
+#### proyecto `usagov-analytics-streaming`
+
+
+
+
+#### proyecto `usagov-analytics-webapp`
+
+
+
+
 
 
