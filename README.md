@@ -294,6 +294,7 @@ Este dashboard nos muestra las analíticas batch sobre datos históricos que han
 ![Screenshot](/screenshots/kibana-dashboard-usagov-batch1.png?raw=true)
 
 
+
 ## Resultados con la Webapp
 
 - Contador con el total de clicks diario
@@ -314,29 +315,36 @@ Este dashboard nos muestra las analíticas batch sobre datos históricos que han
 
 Para esta parte se ha decidido hacer una gráfica por cada timezone. Se han elegido los timezones que he considerado mas relevantes por el numero de clicks que contienen. 
 
-En el dashboard están colocadas las gráficas verticalmente por timezone. De esta forma podemos comparar en la primera columna de gráficas, los clicks en Norte América, en la segunda columna los clicks en Asia, la tercera los clicks en Australia y en la ultima los clicks en Europa.
+En el dashboard están colocadas las gráficas verticalmente por timezone. De esta forma podemos comparar en la primera columna de gráficas, los clicks en Norte América, en la segunda columna los clicks en Asia, la tercera los clicks en Australia y en la última columna los clicks en Europa.
 
 Se observan algunos patrones de acortamientos de URLs dependiendo del timezone:
-- Norte América: se ve claramente que hay un aumento notable de clicks entre las **18:00** y las **20:00**.
-- Asia: se ve que es bastante irregular la comparación de clicks en timezones de Asia.
-- Australia: hay un patrón muy definido en todos los timezone de Australia. Ese pico muestra el aumento de clicks a las **10:00**.
-- Europa: se observa que en todas los timezone de Europa hay in valle en las horas de sueño, lo que indica una disminución muy notable en los clicks en las principales ciudades de Europa. Además también se observa un pequeño aumento entre las **10:00** y las **12:00**. Y por último el pico de la tarde en horas cercanas a las **19:00**.
+- **Norte América**: se ve claramente que hay un aumento notable de clicks entre las **18:00** y las **20:00**.
+- **Asia**: se ve que es bastante irregular la comparación de clicks en timezones de Asia.
+- **Australia**: hay un patrón muy definido en todos los timezone de Australia. Ese pico muestra el aumento de clicks a las **10:00**.
+- **Europa**: se observa que en todas los timezone de Europa hay in valle en las horas de sueño, lo que indica una disminución muy notable en los clicks en las principales ciudades de Europa. Además también se observa un pequeño aumento entre las **10:00** y las **12:00**. Y por último el pico de la tarde en horas cercanas a las **19:00**.
 
 ![Screenshot](/screenshots/kibana-dashboard-usagov-batch1.png?raw=true)
 
 
+
 ## Análisis de escalabilidad
 
+Una arquitectura Big Data suele ser siempre mas o menos escalable, pues las tecnologías que la componen escalan por definición. Concretamente en este caso, la arquitectura es escalable por ese motivo pero puede se puede producir una situación en la que el sistema no escale debidamente por no haber incluido en la arquitectura una capa de ingestión de datos. Dado el volumen de clicks generados en cada instante, durante los periodos de pruebas, no ha sido necesario esta capa. Si se produjera un pico muy alto de acortamientos de URLs posiblemente si habría que incluirla para evitar dicho problema de escalabilidad.
+
+Concretamente con Cassandra y Elasticsearch la escalabilidad está asegurada pues una de sus principales propiedades son la gran velocidad en escrituras.
+
+Sobre Kibana, al funcionar bajo Elasticsearch, tambien escalaría perfectamente. 
 
 
 ## Posibles mejoras
 
-1. Un webcrapper que recoja todos los archivos históricos de measured voice y los persista en HDFS.
-2. El job correspondiente con el proceso real-time, que persistiera los datos en HDFS, en ficheros compuestos por los eventos generados en una hora. Cada día un directorio en HDFS con 24 ficheros que contendrían todos los clicks de ese día.
-3. El job correspondiente con el proceso batch, tendría que leer los eventos del directorio HDFS correspondiente con el día de ejecución e indexar en Elasticserach el análisis diario de accesos a dominios de EEUU.
-4. Un job nuevo de tipo offline, que procesara los datos de todos los directorios almacenados en HDFS, es decir, de todos los días desde la primera vez que se ejecutó la aplicación. Esto seria para realizar procesamiento analítico de tipo predictivo con algoritmos de machine-learning aplicando técnicas de clustering como por ejemplo el método Kmeans. Las predicciones podrían ir desde predecir que ciudad del mundo tendrá mas accesos a una hora determindada, hasta por ejemplo determinar a que hora del día se llegará a una número de acortamientos de un dominio determinado.
-5. Implementar un script de instalacion de todos los componentes necesarios para la ejecucion de la aplicación.
-6. Implementar un script de ejecucion con el orden correcto en el que se tienen que lanzar los jobs para poder visualizar los resultados.
+1. Incluir un sistema de ingestion de datos mediante colas, que asegure el procesamiento de grandes picos de clicks.
+2. Un webcrapper que recoja todos los archivos históricos de measured voice y los persista en HDFS.
+3. El job correspondiente con el proceso real-time, que persistiera los datos en HDFS, en ficheros compuestos por los eventos generados en una hora. Cada día un directorio en HDFS con 24 ficheros que contendrían todos los clicks de ese día.
+4. El job correspondiente con el proceso batch, tendría que leer los eventos del directorio HDFS correspondiente con el día de ejecución e indexar en Elasticserach el análisis diario de accesos a dominios de EEUU.
+5. Un job nuevo de tipo offline, que procesara los datos de todos los directorios almacenados en HDFS, es decir, de todos los días desde la primera vez que se ejecutó la aplicación. Esto seria para realizar procesamiento analítico de tipo predictivo con algoritmos de machine-learning aplicando técnicas de clustering como por ejemplo el método Kmeans. Las predicciones podrían ir desde predecir que ciudad del mundo tendrá mas accesos a una hora determindada, hasta por ejemplo determinar a que hora del día se llegará a una número de acortamientos de un dominio determinado.
+6. Implementar un script de instalacion de todos los componentes necesarios para la ejecucion de la aplicación.
+7. Implementar un script de ejecucion con el orden correcto en el que se tienen que lanzar los jobs para poder visualizar los resultados.
 
 
 ## Aprendizaje
