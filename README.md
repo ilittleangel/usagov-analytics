@@ -7,7 +7,8 @@ Este repositorio contiene una aplicación para el análisis real-time y análisi
 La información contenida en cada evento o click, es información sobre la geo-localización de un usuario que ha acortado una url, sobre el navegador utilizado, sobre el instante de tiempo en el que se produce el evento, la ciudad, el país y una serie de campos que permiten hacer analíticas en tiempo real. Estos eventos están serializados en formato JSON, lo que hace sencilla la interacción con las tecnologías de procesado y persistencia de los datos.
 
 ### Tabla de contenidos
-**[Evolucion proyecto](#Evolucion-proyecto)**
+**[Tecnologias Big Data utilizadas](#ETecnologias-Big-Data-utilizadas)**
+**[Evolucion en el desarrollo del proyecto](#Evolucion-en-el-desarrollo-del-proyecto)**
 
 
 ## Tecnologías Big Data utilizadas
@@ -23,7 +24,7 @@ La aplicación hace uso de las siguientes tecnologías big data para el procesam
 * [Kibana](https://www.elastic.co/products/kibana) como plataforma de visualizacion real-time y de analítica mediante gráficas y dashboards. Se ha usado para la renderizacion de los resultados bajo Elasticsearch.
 
 
-## Evolución del desarrollo del proyecto
+## Evolución en el desarrollo del proyecto
 
 Esta sección la voy a dividir en las diferentes fases en las que se ha desarrollado la realización del proyecto, ordenada de forma temporal:
 
