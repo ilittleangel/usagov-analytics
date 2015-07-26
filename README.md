@@ -244,14 +244,16 @@ Una vez instalado y arrancado, Kibana se encuentra escuchando en el puerto 5601,
 #### Pruebas en el entorno de desarrollo local:
 
 **Streaming**
+
 | jobs				             | tiempo de ejecución mantenido | hora de ejecución | clicks cargados |
 | ------------------------------ |-------------------------------| ----------------- | --------------- |
 | `UsagovStreamingElasticsearch` | 1 h                           | 12:45 - 13:45     | 4.613     	   |
-| `UsagovStreamingElasticsearch` | 1 h                           |                   | -			   |
+| `UsagovStreamingElasticsearch` | 1 h                           | -                 | -			   |
 | `UsagovStreamingCassandra`     | 10 min       	             | 10:51 - 11:01     | 715			   |
-| `UsagovStreamingCassandra`     | 10 min       	             | 		             | -			   |
+| `UsagovStreamingCassandra`     | 10 min       	             | -	             | -			   |
 
 **Batch**
+
 | jobs		                 | tiempo de ejecución 	| clicks procesados |
 | ---------------------------|----------------------| ----------------- |
 | `UsagovBatchElasticsearch` | 12 min      	        | 429.289           |
@@ -280,6 +282,7 @@ Las gráficas de este dashboard son:
 
 El screenshot correponde con la ejecución de 1h 
 ![Screenshot](/screenshots/kibana-dashboard-usagov-streaming.png?raw=true)
+
 
 #### BATCH DASHBOARD
 Este dashboard nos muestra las analíticas batch sobre datos históricos que han sido indexadas en Elasticsearch en el indice `usagov-batch`. Los gráficos mostrados en el screenshots son:
