@@ -11,7 +11,7 @@ La información contenida en cada evento o click, es información sobre la geo-l
 **[Evolucion en el desarrollo del proyecto](#Evolucion-en-el-desarrollo-del-proyecto)**
 
 
-## Tecnologías Big Data utilizadas
+## Tecnologias Big Data utilizadas
 
 La aplicación hace uso de las siguientes tecnologías big data para el procesamiento, almacenamiento y renderización de resultados:
 
@@ -24,7 +24,7 @@ La aplicación hace uso de las siguientes tecnologías big data para el procesam
 * [Kibana](https://www.elastic.co/products/kibana) como plataforma de visualizacion real-time y de analítica mediante gráficas y dashboards. Se ha usado para la renderizacion de los resultados bajo Elasticsearch.
 
 
-## Evolución en el desarrollo del proyecto
+## Evolucion en el desarrollo del proyecto
 
 Esta sección la voy a dividir en las diferentes fases en las que se ha desarrollado la realización del proyecto, ordenada de forma temporal:
 
