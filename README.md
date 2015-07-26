@@ -375,6 +375,37 @@ Su estructura es la siguiente
 
 #### proyecto `usagov-analytics-batch`
 
+Antes de empezar con el codigo quiero indicar las librerías incluidas en el ´pom.xml´:
+```
+    <properties>
+        <scala.version>2.10.4</scala.version>
+        <spark.version>1.2.1</spark.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_2.10</artifactId>
+            <version>${spark.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_2.10</artifactId>
+            <version>${spark.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch-spark_2.10</artifactId>
+            <version>2.1.0</version>
+        </dependency>
+    </dependencies>
+```
+
 ##### job `UsagovBatchElasticsearch`
 
 Lo primero es la creacion del `SparkContext` donde hay que indicar la ubicación del servidor Elasticsearch, ip y puerto. En este caso `localhost:9200`. A parte también he indicado que cree el index, en el caso de no encontrar donde indexar los documentos. Puesto que vamos a usar Spark SQL es necesario crear el `SQLContext`:
@@ -423,36 +454,148 @@ lines.map(line => {
 })
 ```
 
+Ahora hay que crear un `SchemaRDD` mediante nuestro `SQLContext`. Para ello hacemos uso de la función `jsonRDD()` puesto que hemos convertido en RDDs, las lineas de los ficheros de HDFS, contenidas en `lines`. Estas lineas son JSONs, por lo que la función lo interpretará perfectamente:
 ```scala
-
+val events = sqlContext.jsonRDD(lines)
 ```
 
+Registramos una tabla temporal que usaremos para hacer las queries sobre nuestros RDDs:
 ```scala
-
+events.registerTempTable("mytable")
 ```
 
+Realizamos la query sobre cada RDD, En este caso hacemos uso de las funciones registradas en el `SQLContext`. Esta query devuelve un contador por hora de todos los clicks procesados. Obtenemos así la hora a la que se hacen mas acortamientos:
 ```scala
-
+val query1 = sqlContext.sql(
+    """
+      |SELECT
+      |   getToday('dia') as day,
+      |   getTimeFromEpoch(t,'hora') as hour,
+      |   count(1) as counter
+      |FROM mytable
+      |GROUP BY getToday('dia'), getTimeFromEpoch(t,'hora')
+      |ORDER BY counter DESC
+    """.stripMargin)
 ```
 
+El campo day, simplemente se usa para ES y corresponde con el sysdate en formato ""yyyy-MM-dd"". sustituimos el campo devuelto `dia` por `@timestamp` para que ES lo indexe como `"type": "date"` y `"format": "dateOptionalTime"`:
 ```scala
-
+ val query1RDD = query1.toJSON.map(_.replaceAll("\"day\":","\"@timestamp\":"))
 ```
 
+Por último, se indexa el RDD en ES en el indice `usagov-batch` tipo `query1`
 ```scala
-
+EsSpark.saveJsonToEs(query1RDD,"usagov-batch/query1")
 ```
 
+Para el rsto de queries seria igual
 
 
 #### proyecto `usagov-analytics-streaming`
 
+En el `pom.xml` hay que añadir las librerías que se van a usar:
+```
+    <properties>
+        <scala.version>2.10.4</scala.version>
+        <spark.version>1.2.1</spark.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_2.10</artifactId>
+            <version>${spark.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-streaming_2.10</artifactId>
+            <version>${spark.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_2.10</artifactId>
+            <version>${spark.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.datastax.spark</groupId>
+            <artifactId>spark-cassandra-connector_2.10</artifactId>
+            <version>1.2.0-rc3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.elasticsearch</groupId>
+            <artifactId>elasticsearch-spark_2.10</artifactId>
+            <version>2.1.0</version>
+        </dependency>
+    </dependencies>
+```
+
+##### job `UsagovStreamingElasticsearch`
+
+Creamos el SparkContext con la configuracion necesaria para poder conectar a ES. Indicamos que el servidor está en `localhost:9200` y que el cree el indice si no existe. Ademas creamos nuestro StreamingContext con batches de 5 segundos:
+```scala
+val sparkConf = new SparkConf()
+    .setAppName(getClass.getSimpleName)
+    .setMaster("local[2]")
+    .set("es.nodes", "localhost")
+    .set("es.port", "9200")
+    .set("es.index.auto.create", "true")
+    .set("es.field.read.empty.as.null", "false")
+
+val sc = new SparkContext(sparkConf)
+val ssc = new StreamingContext(sc, Seconds(5))
+```
+
+Configuramos el timezone a GMT+0 que es como nos van a llegar los eventos. Asi a la hora de hacer un ´new Date()´ no nos lo hace con el timezone de nuestro entorno. Ademas almacenamos el formato con el que vamos a crear los `Date`:
+```scala
+TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
 
 
 
 #### proyecto `usagov-analytics-webapp`
 
 
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
 
 
 
