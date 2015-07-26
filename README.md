@@ -67,7 +67,7 @@ En cuanto a la codificación de los jobs, se ha elegido utilizar Scala, ya que t
 
 Para conectar Cassandra con Spark se ha utilizado la librería `spark-cassandra-connector` de la empresa [Datastax](https://github.com/datastax/spark-cassandra-connector), con el que se puede almacenar directamente un RDD a una tabla de forma distribuida.
 
-La librería `elasticsearch-Hadoop` ofrece integración nativa entre Elasticsearch y Apache Spark, con lo que se puede almacenar directamente un RDD a un índice de forma distribuida.
+La librería `elasticsearch-Hadoop` de la empresa [Elastic](https://www.elastic.co/guide/en/elasticsearch/hadoop/master/spark.html) ofrece integración nativa entre Elasticsearch y Apache Spark, con lo que se puede almacenar directamente un RDD a un índice de forma distribuida.
 
 #### Spark Streaming
 
