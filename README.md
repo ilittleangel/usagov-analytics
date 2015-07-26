@@ -1,9 +1,17 @@
 # usagov-analytics
 
+## Análisis real-time y análisis batch de urls acortadas del gobierno de EEUU
 
 Este repositorio contiene una aplicación para el análisis real-time y análisis batch del acortamiento mediante [bitly](https://bitly.com/) de url's de paginas web de EEUU, es decir paginas acabadas en .gov y en .mil. Estos datos los ofrece el gobierno de los EEUU en un stream continuo y en tiempo real, mediante eventos que contienen información del acortamiento. 
 
 La información contenida en cada evento o click, es información sobre la geo-localización de un usuario que ha acortado una url, sobre el navegador utilizado, sobre el instante de tiempo en el que se produce el evento, la ciudad, el país y una serie de campos que permiten hacer analíticas en tiempo real. Estos eventos están serializados en formato JSON, lo que hace sencilla la interacción con las tecnologías de procesado y persistencia de los datos.
+
+### Tabla de contenidos
+**[Tecnologías Big Data utilizadas](#iTecnologías-Big-Data-utilizadas)**
+**[Evolución del desarrollo del proyecto](#Evolución-del-desarrollo-del-proyecto)**
+
+
+## Tecnologías Big Data utilizadas
 
 La aplicación hace uso de las siguientes tecnologías big data para el procesamiento, almacenamiento y renderización de resultados:
 
@@ -52,7 +60,7 @@ La arquitectura esta dividida en 3 capas:
 
 ### 1. Procesamiento
 
-#### REAL-TIME
+#### Real-time
 
 Antes del procesamiento suele haber una capa de ingestión que para este proyecto no ha sido necesario implementar. Por lo tanto he incluido la fase de ingestión en la capa de procesamiento ya que Spark Streaming recoge los eventos directamente de la fuente y los procesa.
 
@@ -66,7 +74,7 @@ En el caso de **Elasticsearch**, hay otro job Spark Streaming llamado `UsagovStr
 
 El código de esta parte se encuentra en la carpeta **`streaming`**. Es un proyecto IntelliJ que utiliza maven como gestor de dependencias y está codificado en Scala.
 
-#### BATCH
+#### Batch
 
 El proceso batch agrega la información almacenada en HDFS mediante Spark SQL para posteriormente indexarla con Elasticsearch. Igualmente se enriquece el dato añadiendo una campo `@timestamp` con la fecha del día de ejecución. A parte se usa un index distinto por cada una de las queries que se han implementado.
 
@@ -78,7 +86,7 @@ Esta capa corresponde con el sistema de almacenamiento. Se ha dividido en una ca
 
 Como se han usado dos metodologías muy diferentes, explico las dos:
 
-#### CASSANDRA
+#### Cassandra
 
 Cassandra se ha utilizado para persistir las agregaciones que se realizan en el job Spark llamado `UsagovStreamingCassandra`. Para ello se ha creado un job previo de configuración de Cassandra, también de Spark, llamado `UsagovSparkCassandraSetup` en el que se crea el `keyspace` `"usagov"` y una column family por cada una de las queries que la web necesita, ya que Cassandra usa el paradigma `query driven desing`.
 
@@ -88,7 +96,7 @@ Cassandra también se ha usado para la renderización de los resultados. Esta pa
 
 El código se encuentra en la carpeta **`webapp`**. Es un proyecto IntelliJ mavenizado y codificado en Java.
 
-#### ELASTICSEARCH
+#### Elasticsearch
 
 Se ha utilizado este motor de búsqueda distribuido para indexar cada uno de los eventos capturados por Spark Streaming.
 
@@ -146,7 +154,7 @@ Para el índice `usagov-batch` se ha mapeado el campo `hour` como tipo `date`, p
 
 Según la arquitectura, la capa de visualización contiene dos formas de visualizar los datos: mediante una web y mediante Kibana.
 
-#### WEBAPP
+#### Webapp
 
 Este módulo está divido en los siguientes componentes:
 * Pagina Web donde se muestran los datos
@@ -158,7 +166,7 @@ El código se encuentra en la carpeta **`webapp`**. Es un proyecto IntelliJ mave
 
 En esta parte se han obtenido gráficas con ciertas limitaciones respecto a la siguiente opción de visualización.
 
-#### KIBANA
+#### Kibana
 
 Kibana es una herramienta que tiene una integración perfecta con Elasticsearch. De ahí la necesidad de indexar cada evento para poder construir de una forma sencilla, dashboards intuitivos y agradables para el análisis de los datos. 
 
