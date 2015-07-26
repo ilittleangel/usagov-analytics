@@ -12,8 +12,8 @@ La aplicación hace uso de las siguientes tecnologías big data para el procesam
 * [Spark Streaming](http://spark.apache.org/streaming/) dentro del framework de Spark, para la captura y procesado de los eventos que se están generando en tiempo real, mediante ventanas temporales.
 * [Spark SQL](https://spark.apache.org/sql/) combinado con Spark Streaming, para hacer agregaciones de los eventos contenidos en una ventana temporal. Y para el análisis en batch, Spark SQL es usado para hacer analíticas en busca de patrones.
 * [Cassandra](http://cassandra.apache.org/) como base de datos distribuida y motor NoSQL basado en un modelo columnar, Cassandra es usada para la persistencia de los datos analizados en real-time.
-* [Elasticsearch](https://www.elastic.co/products/elasticsearch) como servidor de búsqueda distribuido usado para la renderización de los resultados y búsqueda de grupos de eventos.
-* [Kibana](https://www.elastic.co/products/kibana) para la visualización mediante dashboards.
+* [Elasticsearch](https://www.elastic.co/products/elasticsearch) como servidor de búsqueda distribuido usado para la persistencia de los datos y búsqueda de grupos de eventos.
+* [Kibana](https://www.elastic.co/products/kibana) como plataforma de visualizacion real-time y de analítica mediante gráficas y dashboards. Se ha usado para la renderizacion de los resultados bajo Elasticsearch.
 
 
 ## Evolución del desarrollo del proyecto
@@ -74,7 +74,7 @@ Esto se hace en un job llamdo `UsagovBatchElasticsearch` y el código se encuent
 
 ### 2. Indexación y/o persistencia
 
-Esta capa corresponde con el sistema de almacenamiento. Se ha dividido en una capa independiente para enfatizar la metodología usada para la persistencia y renderización de los datos. 
+Esta capa corresponde con el sistema de almacenamiento. Se ha dividido en una capa independiente para enfatizar la metodología usada para la persistencia e indexación de los datos. 
 
 Como se han usado dos metodologías muy diferentes, explico las dos:
 
@@ -156,17 +156,20 @@ Este módulo está divido en los siguientes componentes:
 
 El código se encuentra en la carpeta **`webapp`**. Es un proyecto IntelliJ mavenizado y esta codificado en Java, Javascript y HTML.
 
-En esta parte se han obtenido gráficas con cierta limitacion respecto a la siguiente opcion de visualizacion.
+En esta parte se han obtenido gráficas con ciertas limitaciones respecto a la siguiente opción de visualización.
 
 #### KIBANA
 
+Kibana es una herramienta que tiene una integración perfecta con Elasticsearch. De ahí la necesidad de indexar cada evento para poder construir de una forma sencilla, dashboards intuitivos y agradables para el análisis de los datos. 
+
+En los screenshots que se muestran mas adelante se explicará cada una de las analíticas en tiempo real que Elastisearch y Kibana permiten construir.
 
 
 ## Elección de herramientas
 
 ### Spark
 
-Tanto para los procesos realtime como para los procesos offline que se han construido, se ha decidido utilizar Spark, ya que es una herramienta emergente que aspira a sustituir a MapReduce, al poder controlar el almacenamiento en memoria o en disco de las estructuras de datos distribuidos, llamados RDDs, ofreciendo una velocidad mayor puesto que ahorra accesos a memoria persistente.
+Tanto para los procesos realtime como para los procesos offline que se han construido, se ha decidido utilizar Spark, ya que es una herramienta emergente que aspira a sustituir a MapReduce, al poder controlar el almacenamiento en memoria o en disco de las estructuras de datos distribuidos, llamados RDDs (Resilient Distributed Dataset), ofreciendo una velocidad mayor puesto que ahorra accesos a memoria persistente.
 
 Además de ser un framework de computación distribuida Open Source, tiene la ventaja de contener un stack de herramientas de alto nivel que incluye Spark SQL, MLlib para machine learning, GraphX para computación de grafos y Spark Streaming. Todas estas librerías se pueden combinar sin problemas en la misma aplicación.
 
@@ -174,29 +177,45 @@ En cuanto a la codificación de los jobs, se ha elegido utilizar Scala, ya que t
 
 Para conectar Cassandra con Spark se ha utilizado la librería `spark-cassandra-connector` de Datastax con el que se puede almacenar directamente un RDD a una tabla de forma distribuida.
 
-Para conectar Elasticsearch con Spark se ha utilizado la librería `elasticsearch-spark` de Elasticsearch con el que se puede almacenar directamente un RDD a un índice de forma distribuida.
+La libreria `elasticsearch-Hadoop` ofrece integración nativa entre Elasticsearch y Apache Spark, con lo que se puede almacenar directamente un RDD a un índice de forma distribuida.
 
 ### Spark Streaming
 
+Dentro del framework Spark, Spark Streaming es la librería de procesamiento real-time y por tanto ofrece todo el lenguaje del API de Spark. Ha sido elegido porque permite implementar streaming jobs de la misma forma que se escriben batch jobs. 
+
+Al igual que Spark, Spark Streaming ofrece todas las características de un framework Big Data, es decir, procesamiento distribuido, escalabilidad y tolerancia a fallos, gracias a la principal abstracción de la tecnología Spark, los RDDs.
+
+La elección de Spark Streaming como framework de computación real-time, es porque se ajusta perfectamente a las necesidades de analítica que este proyecto necesitaba. 
+
+Para el caso de Cassandra como sistema de persistencia, Spark Streaming ha permitido capturar los eventos del feed 1usagov y procesarlos en ventanas temporales para luego insertar el resultado en la column familie correspondiente. Esto es gracias a la integracion de Spark con Cassandra que ofrece `spark-cassandra-connector`.
+
+Para el caso de Elasticsearch, Spark tiene una integración perfecta mediante la librería `elasticsearch-spark`. Esto permite indexar RDDs en Elasticsearch de forma muy sencilla.
 
 ### Spark SQL
 
+Spark SQL me ha permitido hacer los cálculos sobre las agrupaciones de eventos con lenguaje SQL. Gracias a la abstracción que ofrece la estructura ´SchemaRDD´ de Spark, se pueden crear tablas a partir de objetos JSON y usar cada campo como elementos de una tabla.
 
 ### HDFS
 
+Spark también ofrece total integración con Hadoop por lo que almacenar los ficheros históricos de clicks en HDFS, permite distribuir enormes datasets de datos y leer desde Spark de forma también muy sencilla.
 
 ### Cassandra
 
-La base de datos elegida en una primera instancia fue Cassandra, ya que aporta tiempos de escritura muy rápidos y permite escalabilidad sin tener un punto único de fallo. 
+La primera opción al elegir el sistema para persistir los datos fue Cassandra ya que es una base de datos distribuida que aporta tiempos de escritura muy rápidos y permite escalabilidad sin tener un punto único de fallo. 
+
+Spark ofrece, como ya se ha comentado antes, una integración completa con Cassandra. Esto incluye la interaccion mediante `CQL` (Cassandra Query Language). 
 
 ### Elasticsearch
 
+Elasticsearch es un servidor de búsqueda distribuido, es decir un buscador big data, basado en Lucene. Esto permite la indexación y búsqueda de texto completo. Elasticsearch provee una interfaz web RESTfull que funciona mediante documentos JSON. 
 
-### Java Servlets
+Permite escalabilidad horizontal, alta disponibilidad y analíticas en tiempo real gracias a su velocidad de respuesta. 
 
+Por todas estas características y por la necesidad de indexar la información en este motor de búsqueda para poder construir gráficas analíticas en Kibana, elegí Elasticsearch como sistema de persistencia de los datos.
 
 ### Kibana
 
+Kibana permite la visualización en tiempo real de datos indexados en Elasticsearch. Permite construir dashboards analíticos de forma muy sencilla. La eleccion de Kibana es por ser una herramienta de referencia en visualizacion real-time, perfecto para el caso de uso de este proyecto.
 
 
 ## Pruebas
@@ -205,20 +224,27 @@ La base de datos elegida en una primera instancia fue Cassandra, ya que aporta t
 
 ## Resultados
 
-**WEBAPP**
-* Se ha representado un contador con el total de clicks diario
-* Diagramas de barras con el total de clicks diarios por país
+#### WEBAPP
+
+* Se ha representado un contador con el total de clicks diario y diagramas de barras con el total de clicks diarios por país
+
 ![Screenshot](/screenshots/webapp-barchart-toppaises.png?raw=true)
+
 * Un top list de los accesos a dominios representando un contador total por dominio
+
 ![Screenshot](/screenshots/webapp-toplist-dominios.png?raw=true)
+
 * Y por último, la hacer click en un dominio, se abre otra pagina donde se representa la evolucion diaria de clicks para ese dominio
 
-**STREAMING DASHBOARD**
+![Screenshot](/screenshots/webapp-areachart-evoluciondominio.png?raw=true)
+
+### STREAMING DASHBOARD
+
 ![Screenshot](/screenshots/kibana-dashboard-usagov-streaming.png?raw=true)
 
-**BATCH DASHBOARD**
-![Screenshot](/screenshots/kibana-dashboard-usagov-batch1.png?raw=true)
+### BATCH DASHBOARD
 
+![Screenshot](/screenshots/kibana-dashboard-usagov-batch1.png?raw=true)
 
 
 ## Análisis de escalabilidad
