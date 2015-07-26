@@ -255,8 +255,8 @@ Una vez instalado y arrancado, Kibana se encuentra escuchando en el puerto 5601,
 #### Pruebas en el entorno de desarrollo local:
 
 
-![Screenshot](/screenshots/pruebas-elasticsearch.png?raw=true)
-
+![Screenshot](/screenshots/pruebas-elasticsearch.png?raw=true) 
+![Screenshot](/screenshots/pruebas-cassandra.png?raw=true)
 
 **Streaming**
 
@@ -265,7 +265,8 @@ Una vez instalado y arrancado, Kibana se encuentra escuchando en el puerto 5601,
 | `UsagovStreamingElasticsearch` | 1 h                           | 12:45 - 13:45     | 4.613     	   |
 | `UsagovStreamingElasticsearch` | 1 h                           | 19:30 - 20:30     | 4.738		   |
 | `UsagovStreamingCassandra`     | 10 min       	             | 10:51 - 11:01     | 715			   |
-| `UsagovStreamingCassandra`     | 10 min       	             | -	             | -			   |
+| `UsagovStreamingCassandra`     | 20 min       	             | 21:00 - 21:20     | 1468			   |
+
 
 **Batch**
 
