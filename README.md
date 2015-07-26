@@ -7,11 +7,18 @@ Este repositorio contiene una aplicación para el análisis real-time y análisi
 La información contenida en cada evento o click, es información sobre la geo-localización de un usuario que ha acortado una url, sobre el navegador utilizado, sobre el instante de tiempo en el que se produce el evento, la ciudad, el país y una serie de campos que permiten hacer analíticas en tiempo real. Estos eventos están serializados en formato JSON, lo que hace sencilla la interacción con las tecnologías de procesado y persistencia de los datos.
 
 ### Tabla de contenidos
-**[Tecnologias Big Data utilizadas](#tecnologias-big-data-utilizadas)**
-**[Evolucion en el desarrollo del proyecto](#evolucion-en-el-desarrollo-del-proyecto)**
+- **[Tecnologías Big Data utilizadas](#tecnologías-big-data-utilizadas)**
+- **[Evolución en el desarrollo del proyecto](#evolución-en-el-desarrollo-del-proyecto)**
+- **[Arquitectura Big Data](#arquitectura-big-data)**
+- **[Elección de herramientas](#elección-de-herramientas)**
+- **[Pruebas](#pruebas)**
+- **[Posibles mejoras](#posibles-mejoras)**
+- **[Aprendizaje](#aprendizaje)**
+- **[Ubicación código fuente](#ubicación-código-fuente)**
+- **[Análisis del código fuente](#análisis-del-código-fuente)**
 
 
-## Tecnologias Big Data utilizadas
+## Tecnologías Big Data utilizadas
 
 La aplicación hace uso de las siguientes tecnologías big data para el procesamiento, almacenamiento y renderización de resultados:
 
@@ -24,7 +31,7 @@ La aplicación hace uso de las siguientes tecnologías big data para el procesam
 * [Kibana](https://www.elastic.co/products/kibana) como plataforma de visualizacion real-time y de analítica mediante gráficas y dashboards. Se ha usado para la renderizacion de los resultados bajo Elasticsearch.
 
 
-## Evolucion en el desarrollo del proyecto
+## Evolución en el desarrollo del proyecto
 
 Esta sección la voy a dividir en las diferentes fases en las que se ha desarrollado la realización del proyecto, ordenada de forma temporal:
 
@@ -277,7 +284,7 @@ Kibana permite la visualización en tiempo real de datos indexados en Elasticsea
 
 
 
-## Explicación código fuente
+## Análisis del código fuente
 
 división en bloques funcionales
 
