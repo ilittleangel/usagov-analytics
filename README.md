@@ -20,7 +20,7 @@ La información contenida en cada evento o click, es información sobre la geo-l
 - **[Aprendizaje](#aprendizaje)**
 - **[Ubicación código fuente](#ubicación-código-fuente)**
 - **[Análisis del código fuente](#análisis-del-código-fuente)**
-
+- **[Conclusiones](#conclusiones)**
 
 ## Tecnologías Big Data utilizadas
 
@@ -65,7 +65,7 @@ Además de ser un framework de computación distribuida Open Source, tiene la ve
 
 En cuanto a la codificación de los jobs, se ha elegido utilizar Scala, ya que tiene su propia Api Spark y al cual se le puede importar librerías Java.
 
-Para conectar Cassandra con Spark se ha utilizado la librería `spark-cassandra-connector` de Datastax con el que se puede almacenar directamente un RDD a una tabla de forma distribuida.
+Para conectar Cassandra con Spark se ha utilizado la librería `spark-cassandra-connector` de la empresa [Datastax](https://github.com/datastax/spark-cassandra-connector), con el que se puede almacenar directamente un RDD a una tabla de forma distribuida.
 
 La librería `elasticsearch-Hadoop` ofrece integración nativa entre Elasticsearch y Apache Spark, con lo que se puede almacenar directamente un RDD a un índice de forma distribuida.
 
@@ -91,9 +91,11 @@ Spark también ofrece total integración con Hadoop por lo que almacenar los fic
 
 #### Cassandra
 
-La primera opción al elegir el sistema para persistir los datos fue Cassandra ya que es una base de datos distribuida que aporta tiempos de escritura muy rápidos y permite escalabilidad sin tener un punto único de fallo. 
+La primera opción al elegir el sistema para persistir los datos fue Cassandra ya que es una base de datos distribuida y descentralizada que aporta tiempos de escritura muy rápidos y permite escalabilidad transparente sin tener un punto único de fallo. 
 
-Spark ofrece, como ya se ha comentado antes, una integración completa con Cassandra. Esto incluye la interacción mediante `CQL` (Cassandra Query Language). 
+Ademas tiene consistencia configurable en 3 niveles `quorum` (la mitad + 1 de las maquinas tienen que responder), `all` y `one`. Esto ofrece alta disponibilidad, pero con consistencia débil.
+
+Tambien porque Spark ofrece, como ya se ha comentado antes, una integración completa con Cassandra. Esto incluye la interacción mediante `CQL` (Cassandra Query Language). 
 
 #### Elasticsearch
 
@@ -159,6 +161,15 @@ El código se encuentra en la carpeta **`streaming`**.
 Cassandra también se ha usado para la renderización de los resultados. Esta parte consiste en una webapp que hace uso de Servlets de Java para conectarse a Cassandra y serializar el resultado de las consultas en JSON y así poder enviar los datos a la web. 
 
 El código se encuentra en la carpeta **`webapp`**. Es un proyecto IntelliJ mavenizado y codificado en Java.
+
+La `keyspace` de Cassandra creado para esta aplicación es `usagov` y la su definicion de las `Partition Key` y `Clustering Key` de sus `column families` se encuentra encuentra en la clase `UsagovSparkCassandraSetup`. El modelo contiene las siguiente column families:
+- clicks
+- topcountryminutes
+- topcountryseconds
+- topdomainbycountryminutes
+- topdomainbycountryseconds
+- topdomainminutes
+- topdomainseconds
 
 #### Buscador distruido Elasticsearch
 
@@ -243,12 +254,16 @@ Una vez instalado y arrancado, Kibana se encuentra escuchando en el puerto 5601,
 
 #### Pruebas en el entorno de desarrollo local:
 
+
+![Screenshot](/screenshots/pruebas-elasticsearch.png?raw=true)
+
+
 **Streaming**
 
 | jobs				             | tiempo de ejecución mantenido | hora de ejecución | clicks cargados |
 | ------------------------------ |-------------------------------| ----------------- | --------------- |
 | `UsagovStreamingElasticsearch` | 1 h                           | 12:45 - 13:45     | 4.613     	   |
-| `UsagovStreamingElasticsearch` | 1 h                           | -                 | -			   |
+| `UsagovStreamingElasticsearch` | 1 h                           | 19:30 - 20:30     | 4.738		   |
 | `UsagovStreamingCassandra`     | 10 min       	             | 10:51 - 11:01     | 715			   |
 | `UsagovStreamingCassandra`     | 10 min       	             | -	             | -			   |
 
@@ -256,13 +271,8 @@ Una vez instalado y arrancado, Kibana se encuentra escuchando en el puerto 5601,
 
 | jobs		                 | tiempo de ejecución 	| clicks procesados |
 | ---------------------------|----------------------| ----------------- |
-| `UsagovBatchElasticsearch` | 12 min      	        | 429.289           |
-| `UsagovBatchElasticsearch` | - min      	        | cargar  mas dias  |
+| `UsagovBatchElasticsearch` | 3 min 17 sg  	    | 429.289           |
 
-
-#### Pruebas en un cluster
-
-Las pruebas en entorno distribuido no han sido todavía realizadas
 
 
 ## Resultados con Kibana
@@ -600,7 +610,7 @@ val sc = new SparkContext(sparkConf)
 val ssc = new StreamingContext(sc, Seconds(5))
 ```
 
-Configuramos el timezone a GMT+0 que es como nos van a llegar los eventos. Así a la hora de hacer un `new Date()` no nos lo hace con el timezone de nuestro entorno. Ademas almacenamos el formato con el que vamos a crear los `Date`:
+Configuramos el timezone a GMT+0 que es con el que llegan los eventos. Así a la hora de hacer `new Date()` no nos lo hace con el timezone de nuestro entorno. Ademas almacenamos el formato con el que vamos a crear los `Date`:
 ```scala
 TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
 val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
@@ -659,7 +669,7 @@ documentsRDD.collect.foreach(println)
 EsSpark.saveJsonToEs(documentsRDD,"usagov-streaming/data")
 ```
 
-Por último, indicar al `StreamingContext` que puede comenzar e indicar que se ejecute durante 60 minutos. Posteriormente le decimos que cuando le llegue la señal de `stop` que finalice de forma segura y sin perder eventos:
+Finalmente, indicar al `StreamingContext` que puede comenzar. Tambien indicaremos que se ejecute durante 60 minutos. Posteriormente le decimos que cuando le llegue la señal de `stop` que finalice de forma segura y sin perder eventos:
 ```scala
 ssc.start()
 ssc.awaitTermination(60 * 60 * 1000)
@@ -669,7 +679,7 @@ ssc.stop(true,true)
 
 #### Job `UsagovSparkCassandraSetup`
 
-Este job se encarga de crear en Cassandra el `Keyspace` y las `column families`. Por lo tanto este job tiene que ser ejecutado al lanzar la aplicacion por primera vez.
+Este job se encarga de crear en Cassandra el `Keyspace` y las `column families`. Por lo tanto este job tiene que ser ejecutado al lanzar la aplicación por primera vez.
 
 Como en todos, configuramos el SparkContext donde indicamos la ubicaión del servidor de Casandra, en este caso `localhost` y por defecto el puerto `9000` que no es necesario expecificar:
 ```scala
@@ -701,45 +711,224 @@ session.execute(
       """.stripMargin)
 ```
 
-Asi con todas las `column families`. de nuestro modelo
+Y así con todas las `column families` de nuestro modelo.
 
 
 #### Object `UsagovClasses`
 
+Este object de Scala contiene las `case class` que se necesitan para insertar los RDDs en Cassandra. Las clases tienen el mismo esquema que la column family de Cassandra, por lo tanto, hay una clase por cada column familie diferente. Las clases tiene que extender de `Serializable`:
+```scala
+case class TopDomain(date: String, domain: String, time: String, contador: Long) extends Serializable
+```
 
+Tambien contiene un metodo `apply(Row)` por cada ´case class´ con el que se hace referencia a cada campo que va ser insertado en Cassandra. Este método recibe un parámetro tipo `Row` que recupera de cada registro compuesto en el SchemaRDD, la información que contiene. 
+```scala
+object TopDomain {
+    def apply(r: Row): TopDomain = TopDomain(
+      r.getString(0), r.getString(1), r.getString(2), r.getLong(3))
+}
+```
 
 
 #### Job `UsagovStreamingCassandra`
+
+Este job se encarga de capturar los eventos del feed 1usagov y almacenar los resultados de las agregaciones sobre dichos eventos en Cassandra.
+
+Configuramos el timezone a GMT+0 que es con el que llegan los eventos:
+```scala
+TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+```
+
+Configuracion de Spark. Indicamos el host de Cassandra:
+```scala
+val sparkConf = new SparkConf()
+    .setAppName(getClass.getSimpleName)
+    .setMaster("local[2]")
+    .set("spark.cassandra.connection.host", "localhost")
+```
+
+Creamos el `SparkContext`, el `StreamingContext` y el `SQLContext`:
+```scala
+val sc = new SparkContext(sparkConf)
+val ssc = new StreamingContext(sc, Seconds(10))
+val sqlContext = new SQLContext(sc)
+```
+
+Registro de las funciones que vamos a usar en el `SQLContext`:
+```scala
+sqlContext.registerFunction("getDomain", getDomain _)
+sqlContext.registerFunction("getTimeFromEpoch", getTimeFromEpoch _)
+```
+
+Creamos el DStream a partir del custom reciever implementado en la clase `UsagovReciever` 
+```scala
+val usagovDStream = ssc.receiverStream(new UsagovReceiver())
+```
+
+Creamos ventanas de 10 y de 60 segundos, que se deslizan cada 10 y 60 segundos respectivamente:
+```scala
+val windowDStream1s = usagovDStream.window(Seconds(10), Seconds(10))
+val windowDStream60s = usagovDStream.window(Seconds(60), Seconds(60))
+```
+
+Por cada RDD de nuestra ventana temporal:
+```scala
+windowDStream1s.foreachRDD{ rdd =>
+```
+
+Creamos un `SchemaRDD` en nuestro `SQLContext` y registramos una tabla temporal para poder hacer queries SQL sobre dicha tabla:
+```scala
+sqlContext.jsonRDD(rdd).registerTempTable("mytable")
+```
+
+Alamcenamos el resultado de aplicar la query SQL sobre nuestro `SchemaRDD`, haciendo uso de las clases citadas anteriormente. En este ejemplo sobre `TopDomain`. Y por último salvamos en Cassandra en el `kayspace` `usagov` y `column family` `topdomainseconds`:
+```scala
+sqlContext.sql(
+        """
+          |SELECT
+          | getTimeFromEpoch(t,'dia'),
+          | getDomain(u),
+          | getTimeFromEpoch(t,'segundo'),
+          | COUNT(1)
+          |FROM mytable
+          |WHERE
+          | t is not null and
+          | u is not null
+          |GROUP BY getTimeFromEpoch(t,'dia'), getDomain(u), getTimeFromEpoch(t,'segundo')
+        """.stripMargin)
+        .map(TopDomain(_))
+        .saveToCassandra("usagov", "topdomainseconds")
+```
+Lo mismo para cada column familie de nuestro modelo Cassandra.
+
+Para almacenar todos los clicks, se ha optado por no usar SparkSQL, simplemente con el API de Spark se almacena el JSON entero mas un campo fecha `"yyyy-MM-dd"` que es nuestra `partition key`:
+```scala
+rdd.map(x =>
+        (getTimeFromEpoch2(x.split(",")
+        .find(_.contains("\"t\":"))
+        .map(_.split(":")(1))
+        .getOrElse()
+        .toString,"dia"), x))
+        .saveToCassandra("usagov", "clicks")
+```
+
+Finalmente cerramos el bucle `foreachRDD` de nuestro `windowDSStream` de 10 segundos.
+
+Para el `DStream` de 60 segundos se hace los mismo.
+
+Por último, indicar al `StreamingContext` que puede comenzar. En este caso indicamos que se ejecute durante 10 minutos:
+```scala
+ssc.start()
+ssc.awaitTermination(10 * 60 * 1000) // 10 min
+ssc.stop(true,true)
+```
 
 
 
 ### Proyecto `usagov-analytics-webapp`
 
+Este proyecto Maven es la aplicación web que muestra los datos en una pagina HTML. Contiene:
+- el codigo HTML
+- los Servlets de Java que recuperan los resultados de Cassandra y serializan los datos en JSON para enviarlo a la pagina web
+- los Javascritps que llaman a los Servlets y renderizan los datos
 
-```java
-
+El `pom.xml`:
+```
+   <dependencies>
+        <dependency>
+            <groupId>com.datastax.spark</groupId>
+            <artifactId>spark-cassandra-connector_2.10</artifactId>
+            <version>1.2.0-rc3</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+    </dependencies>
 ```
 
-```java
+Explicaré uno de los Servlets ya que todos hacen casi lo mismo con diferentes datos.
 
+#### Clase `CServletTopCountry` 
+
+Este Servlet utiliza el driver `cassandra-driver-core` para Java de la empresa [Datastax](http://docs.datastax.com/en/developer/java-driver/2.0/java-driver/whatsNew2.html). 
+
+La clase extiende de `HttpServlet`:
+```java
+public class CServletTopCountry extends HttpServlet
 ```
 
+Contiene el método `doGet` que se ejecuta cuando le llega una peticion `request`:
 ```java
-
+protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException 
 ```
 
+Dentro del metod `doGet` se abre una `Session` con Cassandra haciendo uso del driver. Establecemos la conexion con el `keyspace` `usagov`, donde estan nuestras `column families`:
 ```java
-
+Cluster cluster;
+Session session;
+cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
+session = cluster.connect("usagov");
 ```
 
+Preparamos la query `CQL` que se va lanzar sobre nuestra session, haciendo uso de la clase `BoundStatement` que nos permite usar parametros dinamicos dentro de la sentencia `CQL`. En este caso se usa para filtrar por el dia actual:
 ```java
-
+PreparedStatement statement = session.prepare(
+                "SELECT country_code, contador " +
+                "FROM topcountryminutes " +
+                "WHERE date = ?  ");
+BoundStatement boundStatement = new BoundStatement(statement);
+ResultSet results = session.execute(boundStatement.bind(today));
 ```
 
+Hacemos uso de un HasMap para agregar por pais y sumar sus contadores:
 ```java
+HashMap<String, ArrayList<Integer>> map = new HashMap<String, ArrayList<Integer>>();
+```
 
+Recorrer el HashMap y parsear el resultado a json:
+```java
+StringBuffer jsonStr = new StringBuffer();
+jsonStr.append("{\r\n");
+jsonStr.append("  \"name_query\": \"topcountry\",\r\n");
+jsonStr.append("  \"description\": \"Top urls acortadas por pais\",\r\n");
+jsonStr.append("  \"results\":\r\n");
+jsonStr.append("  [\r\n");
+for (Entry<String, ArrayList<Integer>> ee : map.entrySet()) {
+	String key = ee.getKey();
+    ArrayList<Integer> values = ee.getValue();
+    jsonStr.append("    {\r\n");
+    jsonStr.append("      \"country\": \"" + Countries.getCountry(key, lang) + "\",\r\n");
+    // suma de los contadores
+    int sum = 0;
+    for (int i : values) {
+    	sum += i;
+    }
+    jsonStr.append("      \"contador\": \"" + sum + "\"\r\n");
+    jsonStr.append("    },\r\n");
+}
+jsonStr.append("  ]\r\n");
+jsonStr.append("}\r\n");
+jsonStr.deleteCharAt(jsonStr.length()-11);
+```
+
+Se envia en el `http response` el json construido:
+```java
+response.setContentType("aplication/json");
+response.setCharacterEncoding("UTF-8");
+response.getWriter().write(jsonStr.toString());
+response.getWriter().flush();
+response.getWriter().close();
 ```
 
 
+## Conclusiones
 
+Existen cada día mas tecnologías que ofrecen soluciones Big Data. Tecnologías que se centran en resolver algún o algunos de los problemas que trae procesar grandes voluntarias de datos y ademas en el instante de creación de estos datos. En este proyecto solo se han utilizado una ínfima parte de ellas, aunque algunas de las mas importantes en este momento, como es Spark. 
+
+Una de las conclusiones que obtengo de haber realizado el proyecto es la velocidad con la que cambian estas tecnologías. En pocos meses, la tecnología con la que te sentías cómodo para desarrollar diferentes soluciones, ha cambiado su paradigma o directamente se ha cerrado su proyecto en la organización Apache Software Fundation, por lo que su desarrollo se puede ver muy comprometido. Por lo tanto la conclusión es que en este mundo hay estar activo prácticamente durante toda la vida.
+
+Otra conclusión que se puede sacar es sobre la gran posibilidad que estas tecnologías nos brindan. Con el crecimiento exponencial de creación de datos en el mundo, existen millones de posibilidades de análisis y servicios que se pueden implementar haciendo uso del Big Data.
 
