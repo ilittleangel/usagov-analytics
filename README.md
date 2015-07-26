@@ -12,6 +12,8 @@ La información contenida en cada evento o click, es información sobre la geo-l
 - **[Arquitectura Big Data](#arquitectura-big-data)**
 - **[Elección de herramientas](#elección-de-herramientas)**
 - **[Pruebas](#pruebas)**
+- **[Resultados](#resultados)**
+- **[Análisis de escalabilidad](#análisis-de-escalabilidad)**
 - **[Posibles mejoras](#posibles-mejoras)**
 - **[Aprendizaje](#aprendizaje)**
 - **[Ubicación código fuente](#ubicación-código-fuente)**
