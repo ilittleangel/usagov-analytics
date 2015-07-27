@@ -12,16 +12,8 @@ import org.elasticsearch.spark.rdd.EsSpark
 
 
 /**
- * It must be added a "@timestamp" field to each line of the RDD,
- * so when indexing ES is recognized as a date and then Kibana can
- * configure an index time-based pattern.
- *
- * In addition, we must be added a "location" field with inverted
- * coordinates for Kibana geohash function can localize on the map each
- * one of events.
- *
- * Therefore, before start with indexing in ES, we must create an index
- * with a schema with mappings of "location" field with an specifics types
+ * Antes de lanzar, hay que crear el index "usagov-streaming" 
+ * y mapear el campo "location" como "geo_point"
  *
  * PUT /usagov-streaming
  * {
@@ -37,12 +29,6 @@ import org.elasticsearch.spark.rdd.EsSpark
  *        }
  *    }
  * }
- *
- * After launch the Spark job, we can check the mapping of ES has done
- * to each field of our JSON, with the following instr:
- *
- * GET usagov-streaming/_mapping
- *
  * */
 
 
