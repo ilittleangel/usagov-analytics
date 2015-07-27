@@ -567,7 +567,7 @@ def onStart() {
 }
 ``` 
 
-Contiene otro método `receive()` que crea un BufferedReader para recibir los datos de la URL donde se encuentra el feed 1usagov. Recibe datos del BufferedReader hasta que es parado:
+Contiene otro método `receive()` que crea un `BufferedReader` para recibir los datos de la URL donde se encuentra el feed `1usagov`. Recibe datos del BufferedReader hasta que es parado:
 ```scala
 private def receive() {
 	var userInput: String = null
@@ -594,9 +594,9 @@ private def receive() {
 
 #### Job `UsagovStreamingElasticsearch`
 
-Este job captura los eventos del feed 1usagov y los indexa en ES.
+Este job captura los eventos del feed `1usagov` y los indexa en ES.
 
-Creamos el SparkContext con la configuración necesaria para poder conectar a ES. Indicamos que el servidor está en `localhost:9200` y que el cree el indice si no existe. Ademas creamos nuestro StreamingContext con batches de 5 segundos:
+Creamos el `SparkContext` con la configuración necesaria para poder conectar ES. Indicamos que el servidor está en `localhost:9200` y que el cree un indice si no existe. Ademas creamos nuestro `StreamingContext` con batches de 5 segundos:
 ```scala
 val sparkConf = new SparkConf()
     .setAppName(getClass.getSimpleName)
@@ -616,7 +616,7 @@ TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
 val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
 ```
 
-Creamos un Discretized Stream `usagovDSStream` instanciando la clase `UsagovReciever`. Esto nos crea un `DStream` que contiene los RDD que a su vez contendran los eventos o JSONs recuperados por el `DStream`. Por lo que por cada RDD hacemos una serie de transformaciones:
+Creamos un `DStream` (Discretized Stream) llamado `usagovDSStream` instanciando la clase `UsagovReciever`. Este DStream contiene los RDDs que a su vez contendran los eventos o JSONs recuperados por el DStream. Por cada RDD hacemos una serie de transformaciones:
 - reemplazar el nombre original de cada campo del JSON por un nombre descriptivo.
 - reemplazar `_id` por `id` para que ES no lo intente indexar con ese `_id` y genere uno aleatorio.
 - invertir las coordenadas del campo `location`
@@ -679,9 +679,9 @@ ssc.stop(true,true)
 
 #### Job `UsagovSparkCassandraSetup`
 
-Este job se encarga de crear en Cassandra el `Keyspace` y las `column families`. Por lo tanto este job tiene que ser ejecutado al lanzar la aplicación por primera vez.
+Este job se encarga de crear en Cassandra el Keyspace y las column families. Por lo tanto este job tiene que ser ejecutado al lanzar la aplicación por primera vez.
 
-Como en todos, configuramos el SparkContext donde indicamos la ubicaión del servidor de Casandra, en este caso `localhost` y por defecto el puerto `9000` que no es necesario expecificar:
+Como en todos, configuramos el SparkContext donde indicamos la ubicación del servidor de Cassandra, en este caso `localhost` y por defecto el puerto `9000` que no es necesario especificar:
 ```scala
 val sparkConf = new SparkConf()
     .setAppName(getClass.getSimpleName)
@@ -690,12 +690,12 @@ val sparkConf = new SparkConf()
 val sc = new SparkContext(sparkConf)
 ```
 
-Abrimos una session en Cassandra:
+Abrimos una `session` en Cassandra:
 ```scala
 CassandraConnector(sparkConf).withSessionDo { session =>
 ```
 
-Y ejecutamos las sentencia `CQL` para crear el `keyspace` y las `column familes`:
+Y ejecutamos las sentencia `CQL` para crear el keyspace y las column families:
 ```scala
 session.execute("DROP KEYSPACE IF EXISTS usagov")
 session.execute("CREATE KEYSPACE usagov WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 1 }")
@@ -711,7 +711,7 @@ session.execute(
       """.stripMargin)
 ```
 
-Y así con todas las `column families` de nuestro modelo.
+Y así con todas las column families de nuestro modelo.
 
 
 #### Object `UsagovClasses`
@@ -732,14 +732,14 @@ object TopDomain {
 
 #### Job `UsagovStreamingCassandra`
 
-Este job se encarga de capturar los eventos del feed 1usagov y almacenar los resultados de las agregaciones sobre dichos eventos en Cassandra.
+Este job se encarga de capturar los eventos del feed `1usagov` y almacenar los resultados de las agregaciones sobre dichos eventos en Cassandra.
 
 Configuramos el timezone a GMT+0 que es con el que llegan los eventos:
 ```scala
 TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
 ```
 
-Configuracion de Spark. Indicamos el host de Cassandra:
+Configuración de Spark. Indicamos el host de Cassandra:
 ```scala
 val sparkConf = new SparkConf()
     .setAppName(getClass.getSimpleName)
@@ -760,7 +760,7 @@ sqlContext.registerFunction("getDomain", getDomain _)
 sqlContext.registerFunction("getTimeFromEpoch", getTimeFromEpoch _)
 ```
 
-Creamos el DStream a partir del custom reciever implementado en la clase `UsagovReciever` 
+Creamos el `DStream` a partir del custom reciever implementado en la clase `UsagovReciever` 
 ```scala
 val usagovDStream = ssc.receiverStream(new UsagovReceiver())
 ```
@@ -781,7 +781,7 @@ Creamos un `SchemaRDD` en nuestro `SQLContext` y registramos una tabla temporal 
 sqlContext.jsonRDD(rdd).registerTempTable("mytable")
 ```
 
-Alamcenamos el resultado de aplicar la query SQL sobre nuestro `SchemaRDD`, haciendo uso de las clases citadas anteriormente. En este ejemplo sobre `TopDomain`. Y por último salvamos en Cassandra en el `kayspace` `usagov` y `column family` `topdomainseconds`:
+Alamcenamos el resultado de aplicar la query SQL sobre nuestro `SchemaRDD`, haciendo uso de las clases citadas anteriormente. En este ejemplo sobre `topdomain`. Y por último salvamos en Cassandra en el keyspace `usagov` y column family `topdomainseconds`:
 ```scala
 sqlContext.sql(
         """
@@ -830,7 +830,7 @@ ssc.stop(true,true)
 Este proyecto Maven es la aplicación web que muestra los datos en una pagina HTML. Contiene:
 - el codigo HTML
 - los Servlets de Java que recuperan los resultados de Cassandra y serializan los datos en JSON para enviarlo a la pagina web
-- los Javascritps que llaman a los Servlets y renderizan los datos
+- los javascript que llaman a los Servlets y renderizan los datos
 
 El `pom.xml`:
 ```
@@ -865,7 +865,7 @@ protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException 
 ```
 
-Dentro del metod `doGet` se abre una `Session` con Cassandra haciendo uso del driver. Establecemos la conexion con el `keyspace` `usagov`, donde estan nuestras `column families`:
+Dentro del método `doGet` se abre una `session` con Cassandra haciendo uso del driver. Establecemos la conexion con el keyspace `usagov`:
 ```java
 Cluster cluster;
 Session session;
@@ -883,12 +883,12 @@ BoundStatement boundStatement = new BoundStatement(statement);
 ResultSet results = session.execute(boundStatement.bind(today));
 ```
 
-Hacemos uso de un HasMap para agregar por pais y sumar sus contadores:
+Hacemos uso de un `HashMap` para agregar por país y sumar sus contadores:
 ```java
 HashMap<String, ArrayList<Integer>> map = new HashMap<String, ArrayList<Integer>>();
 ```
 
-Recorrer el HashMap y parsear el resultado a json:
+Recorrer el `HashMap` y parsear el resultado a JSON:
 ```java
 StringBuffer jsonStr = new StringBuffer();
 jsonStr.append("{\r\n");
@@ -914,7 +914,7 @@ jsonStr.append("}\r\n");
 jsonStr.deleteCharAt(jsonStr.length()-11);
 ```
 
-Se envia en el `http response` el json construido:
+Se envía en el `http response` el JSON construido:
 ```java
 response.setContentType("aplication/json");
 response.setCharacterEncoding("UTF-8");
@@ -926,9 +926,9 @@ response.getWriter().close();
 
 ## Conclusiones
 
-Existen cada día mas tecnologías que ofrecen soluciones Big Data. Tecnologías que se centran en resolver algún o algunos de los problemas que trae procesar grandes voluntarias de datos y ademas en el instante de creación de estos datos. En este proyecto solo se han utilizado una ínfima parte de ellas, aunque algunas de las mas importantes en este momento, como es Spark. 
+Existen cada día mas tecnologías que ofrecen soluciones Big Data. Tecnologías que se centran en resolver algún o algunos de los problemas que trae procesar grandes volumetrías de datos y ademas hacerlo en el instante de creación. En este proyecto solo se han utilizado una ínfima parte de ellas, aunque algunas de las mas importantes en este momento, como es Spark. 
 
-Una de las conclusiones que obtengo de haber realizado el proyecto es la velocidad con la que cambian estas tecnologías. En pocos meses, la tecnología con la que te sentías cómodo para desarrollar diferentes soluciones, ha cambiado su paradigma o directamente se ha cerrado su proyecto en la organización Apache Software Fundation, por lo que su desarrollo se puede ver muy comprometido. Por lo tanto la conclusión es que en este mundo hay estar activo prácticamente durante toda la vida.
+Una de las conclusiones que obtengo de haber realizado el proyecto es la velocidad con la que cambian estas tecnologías. En pocos meses, la tecnología con la que te sentías cómodo para desarrollar diferentes soluciones, ha cambiado su paradigma o directamente se ha cerrado su proyecto en la Apache Software Fundation, por lo que su desarrollo se puede ver muy comprometido. Por lo tanto la conclusión es que en este mundo hay estar activo para no quedarte desactualizado tecnológicamente.
 
-Otra conclusión que se puede sacar es sobre la gran posibilidad que estas tecnologías nos brindan. Con el crecimiento exponencial de creación de datos en el mundo, existen millones de posibilidades de análisis y servicios que se pueden implementar haciendo uso del Big Data.
+Otra conclusión que se puede sacar es sobre la gran posibilidad que nos brindan estas tecnologías. Con el crecimiento exponencial de creación de datos en el mundo, existen millones de posibilidades de análisis y servicios que se pueden implementar haciendo uso del Big Data.
 
