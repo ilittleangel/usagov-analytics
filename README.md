@@ -734,7 +734,7 @@ object TopDomain {
 
 Este job se encarga de capturar los eventos del feed `1usagov` y almacenar los resultados de las agregaciones sobre dichos eventos en Cassandra.
 
-Configuramos el timezone a GMT+0 que es con el que llegan los eventos:
+Configuramos el timezone "UTC" con el que llegan los eventos:
 ```scala
 TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
 ```
@@ -760,12 +760,12 @@ sqlContext.registerFunction("getDomain", getDomain _)
 sqlContext.registerFunction("getTimeFromEpoch", getTimeFromEpoch _)
 ```
 
-Creamos el `DStream` a partir del custom reciever implementado en la clase `UsagovReciever` 
+Creamos el `DStream` a partir del custom reciever implementado en la clase `UsagovReciever`:
 ```scala
 val usagovDStream = ssc.receiverStream(new UsagovReceiver())
 ```
 
-Creamos ventanas de 10 y de 60 segundos, que se deslizan cada 10 y 60 segundos respectivamente:
+Creamos ventanas de 10 y 60 segundos, que se deslizan cada 10 y 60 segundos respectivamente:
 ```scala
 val windowDStream1s = usagovDStream.window(Seconds(10), Seconds(10))
 val windowDStream60s = usagovDStream.window(Seconds(60), Seconds(60))
