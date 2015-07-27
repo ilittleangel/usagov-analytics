@@ -5,8 +5,6 @@ import org.apache.spark.sql.Row
 
 object UsagovClasses {
 
-  //sealed trait Base extends Serializable
-
   /* clases para almacenar el total de url's acortadas */
   case class TopDomain(date: String, domain: String, time: String, contador: Long) extends Serializable
 
@@ -28,7 +26,6 @@ object UsagovClasses {
                        time_hash_was_created: Int,                // hc
                        short_url_cname: String,                   // hh
                        encoding_user_login: String,               // l
-                       //latitude_longitude: Array[Long],         // ll
                        known_user: Int,                           // nk
                        referring_url: String,                     // r
                        timestamp: Int,                            // t
@@ -91,7 +88,7 @@ object UsagovClasses {
  {
         "a": USER_AGENT,
         "c": COUNTRY_CODE, # 2-character iso code
-        "nk": KNOWN_USER,  # 1 or 0. 0=this is the first time we've seen this browser  ¡¡¡ NO SIEMPRE LLEGA EN EL STREAM !!!
+        "nk": KNOWN_USER,  # 1 or 0. 0=this is the first time we've seen this browser 
         "g": GLOBAL_BITLY_HASH,
         "h": ENCODING_USER_BITLY_HASH,
         "l": ENCODING_USER_LOGIN,
