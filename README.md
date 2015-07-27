@@ -48,7 +48,7 @@ Esta sección la voy a dividir en las diferentes fases en las que se ha desarrol
 
 3. El tercer paso ha consistido en escribir en tiempo real estos datos agregados en el motor NoSQL Cassandra para la persistencia y posterior renderización de los datos.
 
-4. Una vez acabadas las 3 fases anteriores, llega la parte de presentación de resultados, en la que opté en primera instancia por crear una página web que hiciera peticiones a un servidor de aplicaciones mediante una webapp, la cual pudiera recuperar los datos de Cassandra y construir un JSON con los resultados, enviándolos de vuelta a la página web. Dichos resutlados podrian ser representados mediante librerías de visualización como [amcharts.js](http://www.amcharts.com/) y [D3.js](http://d3js.org/). Para ello monté esta arquitectura cliente-servidor que explicaré mas en detalle en el punto de "Codigo fuente".
+4. Una vez acabadas las 3 fases anteriores, llega la parte de presentación de resultados, en la que opté en primera instancia por crear una página web que hiciera peticiones a un servidor de aplicaciones mediante una webapp, la cual pudiera recuperar los datos de Cassandra y construir un JSON con los resultados, enviándolos de vuelta a la página web. Dichos resultados podrían ser representados mediante librerías de visualización como [amcharts.js](http://www.amcharts.com/) y [D3.js](http://d3js.org/). Para ello monté esta arquitectura cliente-servidor que explicaré mas en detalle en el punto "Análisis del Codigo fuente".
 
 5. Después de acabar con el modelo anterior y no salir convencido con la visualización final, opté por una herramienta que facilita la creación de cuadros de mando, Kibana. Para el uso de Kibana es necesario indexar los datos en Elasticsearch. Por lo tanto, en esta última etapa del proyecto he montado un servidor Elasticsearch y, mediante Spark Streaming, he indexado todos los clicks capturados, para finalmente usar Kibana para presentar estadísticas en tiempo real.
 
@@ -77,17 +77,17 @@ Al igual que Spark, Spark Streaming ofrece todas las características de un fram
 
 La elección de Spark Streaming como framework de computación real-time, es porque se ajusta perfectamente a las necesidades de analítica que este proyecto necesitaba. 
 
-Para el caso de Cassandra como sistema de persistencia, Spark Streaming ha permitido capturar los eventos del feed 1usagov y procesarlos en ventanas temporales para luego insertar el resultado en la column familie correspondiente. Esto es gracias a la integración de Spark con Cassandra que ofrece `spark-cassandra-connector`.
+Para el caso de Cassandra como sistema de persistencia, Spark Streaming ha permitido capturar los eventos del feed `1usagov` y procesarlos en ventanas temporales para luego insertar el resultado en la column familie correspondiente. Esto es gracias a la integración de Spark con Cassandra que ofrece `spark-cassandra-connector`.
 
 Para el caso de Elasticsearch, Spark tiene una integración perfecta mediante la librería `elasticsearch-spark`. Esto permite indexar RDDs en Elasticsearch de forma muy sencilla.
 
 #### Spark SQL
 
-Spark SQL me ha permitido hacer los cálculos sobre las agrupaciones de eventos con lenguaje SQL. Gracias a la abstracción que ofrece la estructura ´SchemaRDD´ de Spark, se pueden crear tablas a partir de objetos JSON y usar cada campo como elementos de una tabla.
+Spark SQL me ha permitido hacer los cálculos sobre las agrupaciones de eventos con lenguaje SQL. Gracias a la abstracción que ofrece la estructura `SchemaRDD` de Spark, se pueden crear tablas a partir de objetos JSON y usar cada campo como elementos de una tabla.
 
 #### HDFS
 
-Spark también ofrece total integración con Hadoop por lo que almacenar los ficheros históricos de clicks en HDFS, permite distribuir enormes datasets de datos y leer desde Spark de forma también muy sencilla.
+Spark también ofrece total integración con Hadoop por lo que es posible almacenar los ficheros históricos de clicks en HDFS y distribuirlos por el cluster. Spark permite de forma también muy sencilla leer de HDFS.
 
 #### Cassandra
 
@@ -130,15 +130,15 @@ La arquitectura esta dividida en 3 capas:
 
 Antes del procesamiento suele haber una capa de ingestión que para este proyecto no ha sido necesario implementar. Por lo tanto he incluido la fase de ingestión en la capa de procesamiento ya que Spark Streaming recoge los eventos directamente de la fuente y los procesa.
 
-En el caso de usar **Cassandra** como sistema de persistencia de datos, tendríamos un job de Spark Streaming llamado `UsagovStreamingCassandra` que captura los eventos de 1usagov. Hace uso de Spark SQL para agregar la información según las unidades de tiempo (segundo y minuto) e igualmente por (segundo, minuto y país). Finalmente guarda en Cassandra en la conlumn familie que le corresponda, ya que para cada agregación existe una column familie distinta.
+En el caso de usar **Cassandra** como sistema de persistencia de datos, tendríamos un job de Spark Streaming llamado `UsagovStreamingCassandra` que captura los eventos de `1usagov`. Hace uso de Spark SQL para agregar la información según las unidades de tiempo (segundo y minuto) e igualmente por (segundo, minuto y país). Finalmente guarda en Cassandra en la conlumn familie que le corresponda, ya que para cada agregación existe una column familie distinta.
 
-En el caso de **Elasticsearch**, hay otro job Spark Streaming llamado `UsagovStreamingElasticsearch` que recibe el stream de 1usagov de la misma forma pero en este caso se hacen una serie de transformaciones sobre cada evento, que permite a Elasticsearch, indexar los eventos basándose en un patrón time-based y así poder visualizar los datos en una linea temporal. Mas concretamente estas transformaciones consisten en enriquecer el dato de la siguiente forma: 
+En el caso de **Elasticsearch**, hay otro job Spark Streaming llamado `UsagovStreamingElasticsearch` que recibe el stream de 1usagov de la misma forma pero en este caso se hacen una serie de transformaciones sobre cada evento, que permite a Elasticsearch, indexar los eventos basándose en un patrón _time-based_ y así poder visualizar los datos en una linea temporal. Mas concretamente estas transformaciones consisten en enriquecer el dato de la siguiente forma: 
 * remplazar el nombre de cada uno de los campos del JSON, por nombres intiutivos que luego se usaran para las busquedas en Elasticsearch
-* añadir un campo `@timestamp` con la fecha del día que se esta procesando en formato `"yyyy-MM-dd'T'HH:mm:ss'Z'"`, para que Elasticsearch lo indexe como un campo tipo date y así configurar un `index pattern time-based`
+* añadir un campo `@timestamp` con la fecha del día que se esta procesando en formato `"yyyy-MM-dd'T'HH:mm:ss'Z'"`, para que Elasticsearch lo indexe como un campo tipo date y así configurar un _index pattern time-based_
 * parsear el campo con la URL para obtener el dominio y así poder agrupar y sacar analíticas
 * invertir las coordenadas del campo que contiene la geolocalización, ya que Elasticsearch invierte la latitud y la longitud si viene como un tipo array
 
-El código de esta parte se encuentra en la carpeta **`streaming`**. Es un proyecto IntelliJ que utiliza maven como gestor de dependencias y está codificado en Scala.
+El código de esta parte se encuentra en la carpeta **`streaming`**. Es un proyecto IntelliJ que utiliza Maven como gestor de dependencias y está codificado en Scala.
 
 #### Batch
 
@@ -154,7 +154,7 @@ Como se han usado dos metodologías muy diferentes, explico las dos:
 
 #### Base de datos NoSQL Cassandra
 
-Cassandra se ha utilizado para persistir las agregaciones que se realizan en el job Spark llamado `UsagovStreamingCassandra`. Para ello se ha creado un job previo de configuración de Cassandra, también de Spark, llamado `UsagovSparkCassandraSetup` en el que se crea el `keyspace` `"usagov"` y una column family por cada una de las queries que la web necesita, ya que Cassandra usa el paradigma `query driven desing`.
+Cassandra se ha utilizado para persistir las agregaciones que se realizan en el job Spark llamado `UsagovStreamingCassandra`. Para ello se ha creado un job previo de configuración de Cassandra, también de Spark, llamado `UsagovSparkCassandraSetup` en el que se crea el `keyspace` y una `column family` por cada una de las queries que la web necesita, ya que Cassandra usa un paradigma tipo _query driven desing_.
 
 El código se encuentra en la carpeta **`streaming`**.
 
@@ -162,7 +162,7 @@ Cassandra también se ha usado para la renderización de los resultados. Esta pa
 
 El código se encuentra en la carpeta **`webapp`**. Es un proyecto IntelliJ mavenizado y codificado en Java.
 
-La `keyspace` de Cassandra creado para esta aplicación es `usagov` y la su definicion de las `Partition Key` y `Clustering Key` de sus `column families` se encuentra encuentra en la clase `UsagovSparkCassandraSetup`. El modelo contiene las siguiente column families:
+La `keyspace` de Cassandra creado para esta aplicación es `usagov` y la su definicion de las `Partition Key` y `Clustering Key` de sus `column families` se encuentra en la clase `UsagovSparkCassandraSetup`. El modelo contiene las siguiente column families:
 - clicks
 - topcountryminutes
 - topcountryseconds
@@ -177,8 +177,8 @@ Se ha utilizado este motor de búsqueda distribuido para indexar cada uno de los
 
 Para dar respuesta tanto a la parte batch como a la parte real-time, se han creado previamente y mediante la RESTful API de Elasticsearch, dos indices:
 
-1. usagov-streaming
-2. usagov-batch (este contiene dos `_type`, uno por cada query que se ha pretendido responder)
+1. `usagov-streaming`
+2. `usagov-batch` (este contiene dos `_type`, uno por cada query que se ha pretendido responder)
 
 Antes de ejecutar la aplicación sería necesario crear ambos índices mediante las siguientes peticiones:
 
@@ -198,7 +198,7 @@ curl -XPUT 'localhost:9200/usagov-streaming?pretty' -d '
     }
 }'
 ```
-Para el índice `usagov-streaming` solo es necesario indicar explícitamente a Elasticsearch que el datatype del campo `location` sea de tipo `geo_point` para que cuando lo indexe le asigne ese tipo. De esta forma se puede aplicar una función geo_hash que solo se aplica a campos de tipo `geo_point`. Esta función va a permitir agrupar puntos en un mapa y así poder contabilizar múltiples cliks en una misma celda dentro de un mapa.
+Para el índice `usagov-streaming` solo es necesario indicar explícitamente a Elasticsearch que el datatype del campo `location` sea de tipo `geo_point` para que cuando lo indexe le asigne ese tipo. De esta forma se puede aplicar una función `geo_hash` que solo se aplica a campos de tipo `geo_point`. Esta función va a permitir agrupar puntos en un mapa y así poder contabilizar múltiples cliks en una misma celda dentro de un mapa.
 
 ```
 curl -XPUT 'localhost:9200/usagov-batch?pretty' -d '
@@ -232,10 +232,10 @@ Según la arquitectura, la capa de visualización contiene dos formas de visuali
 #### Webapp
 
 Este módulo está divido en los siguientes componentes:
-* Pagina Web donde se muestran los datos
-* Webapp con Servlets de Java que recuperan los datos de Cassandra
-* Javascript's que hacen las peticiones a los servlets y renderizan los datos en gráficas
-* Servidor de aplicaciones Tomcat 7 donde se ejecutan las webapps
+* Pagina Web donde se muestran los datos.
+* Webapp con Servlets de Java que recuperan los datos de Cassandra.
+* Código Javascript que hace las peticiones a los servlets y renderizan los datos en gráficas.
+* Servidor de aplicaciones Tomcat 7 donde se ejecutan las webapps.
 
 El código se encuentra en la carpeta **`webapp`**. Es un proyecto IntelliJ mavenizado y esta codificado en Java, Javascript y HTML.
 
@@ -243,7 +243,7 @@ En esta parte se han obtenido gráficas con ciertas limitaciones respecto a la s
 
 #### Dashboards en Kibana
 
-Kibana es una herramienta que tiene una integración perfecta con Elasticsearch. De ahí la necesidad de indexar cada evento para poder construir de una forma sencilla, dashboards intuitivos y agradables para el análisis de los datos. 
+Kibana es una herramienta que tiene una integración perfecta con Elasticsearch. De ahí la necesidad de indexar cada evento para poder construir de una forma sencilla, dashboards intuitivos y agradables para el análisis de datos. 
 
 En los screenshots que se muestran mas adelante se explicará cada una de las analíticas en tiempo real que Elastisearch y Kibana permiten construir.
 
@@ -259,17 +259,17 @@ Una vez instalado y arrancado, Kibana se encuentra escuchando en el puerto 5601,
 
 **Streaming**
 
-| jobs				             | tiempo de ejecución mantenido | hora de ejecución | clicks cargados |
+| jobs				 | tiempo de ejecución mantenido | hora de ejecución | clicks cargados |
 | ------------------------------ |-------------------------------| ----------------- | --------------- |
-| `UsagovStreamingElasticsearch` | 1 h                           | 12:45 - 13:45     | 4.613     	   |
-| `UsagovStreamingElasticsearch` | 1 h                           | 19:30 - 20:30     | 4.738		   |
-| `UsagovStreamingCassandra`     | 10 min       	             | 10:51 - 11:01     | 715			   |
-| `UsagovStreamingCassandra`     | 20 min       	             | 21:00 - 21:20     | 1468			   |
+| `UsagovStreamingElasticsearch` | 1 h                           | 12:45 - 13:45     | 4.613           |
+| `UsagovStreamingElasticsearch` | 1 h                           | 19:30 - 20:30     | 4.738	       |
+| `UsagovStreamingCassandra`     | 10 min       	         | 10:51 - 11:01     | 715             |
+| `UsagovStreamingCassandra`     | 20 min                        | 21:00 - 21:20     | 1468	       |
 
 
 **Batch**
 
-| jobs		                 | tiempo de ejecución 	| clicks procesados |
+| jobs		             | tiempo de ejecución  | clicks procesados |
 | ---------------------------|----------------------| ----------------- |
 | `UsagovBatchElasticsearch` | 3 min 17 sg  	    | 429.289           |
 
@@ -331,7 +331,7 @@ Se observan algunos patrones de acortamientos de URLs dependiendo del timezone:
 - **Norte América**: se ve claramente que hay un aumento notable de clicks entre las **18:00** y las **20:00**.
 - **Asia**: se ve que es bastante irregular la comparación de clicks en timezones de Asia.
 - **Australia**: hay un patrón muy definido en todos los timezone de Australia. Ese pico muestra el aumento de clicks a las **10:00**.
-- **Europa**: se observa que en todas los timezone de Europa hay in valle en las horas de sueño, lo que indica una disminución muy notable en los clicks en las principales ciudades de Europa. Además también se observa un pequeño aumento entre las **10:00** y las **12:00**. Y por último el pico de la tarde en horas cercanas a las **19:00**.
+- **Europa**: se observa que en todas los timezone de Europa hay in valle en las horas de sueño, lo que indica una disminución muy notable en los clicks en las principales ciudades de Europa. Además también se observa un pequeño aumento entre las **10:00** y las **12:00**. Se observa tambien que todas las gráficas tiene un aumento de clicks en las horas de la tarde cercanas a las **19:00**, algo que de primeras no parece relevante. Pero si parece mas relevante el patrón entre las **22:00** y las **00:00**, en el que hay un descenso y justo a continuación un pico de acortamientos o clicks.
 
 ![Screenshot](/screenshots/kibana-dashboard-usagov-batch1.png?raw=true)
 
@@ -339,7 +339,7 @@ Se observan algunos patrones de acortamientos de URLs dependiendo del timezone:
 
 ## Análisis de escalabilidad
 
-Una arquitectura Big Data suele ser siempre mas o menos escalable, pues las tecnologías que la componen escalan por definición. Concretamente en este caso, la arquitectura es escalable por ese motivo pero puede se puede producir una situación en la que el sistema no escale debidamente por no haber incluido en la arquitectura una capa de ingestión de datos. Dado el volumen de clicks generados en cada instante, durante los periodos de pruebas, no ha sido necesario esta capa. Si se produjera un pico muy alto de acortamientos de URLs posiblemente si habría que incluirla para evitar dicho problema de escalabilidad.
+Una arquitectura Big Data suele ser siempre mas o menos escalable, pues las tecnologías que la componen escalan por definición. Concretamente en este caso, la arquitectura es escalable por ese motivo pero se puede producir una situación en la que el sistema no escale debidamente por no haber incluido en la arquitectura una capa de ingestión de datos. Dado el volumen de clicks generados en cada instante, durante los periodos de pruebas, no ha sido necesario esta capa. Si se produjera un pico muy alto de acortamientos de URLs posiblemente si habría que incluirla para evitar dicho problema de escalabilidad.
 
 Concretamente con Cassandra y Elasticsearch la escalabilidad está asegurada pues una de sus principales propiedades son la gran velocidad en escrituras.
 
