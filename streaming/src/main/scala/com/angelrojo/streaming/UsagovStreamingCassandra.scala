@@ -43,9 +43,6 @@ object UsagovStreamingCassandra extends App {
   val windowDStream1s = usagovDStream.window(Seconds(10), Seconds(10))
   val windowDStream60s = usagovDStream.window(Seconds(60), Seconds(60))
 
-  //val lines1s = windowDStream1s.flatMap(_.split("\\n"))
-  //val lines60s = windowDStream60s.flatMap(_.split("\\n"))
-
   windowDStream1s.foreachRDD{ rdd =>
 
     //sqlContext.jsonRDD(rdd).printSchema()
