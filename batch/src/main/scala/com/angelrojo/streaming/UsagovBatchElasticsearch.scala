@@ -42,7 +42,7 @@ object UsagovBatchElasticsearch extends App {
   val sparkConf = new SparkConf()
     .setAppName("usagov-batch")
     .setMaster("local[2]")
-    .setJars(List("/home/cloudera/Desktop/usagov-analytics-angelrojo/batch/target/usagov-analytics-batch-1.0.jar"))
+    .setJars(List("/Users/angelrojoperez/Desktop/usagov-analytics/batch/target/usagov-analytics-batch-1.0.jar"))
     .setSparkHome("$SPARK_HOME")
     .set("es.nodes", "localhost")
     .set("es.port", "9200")
@@ -57,7 +57,7 @@ object UsagovBatchElasticsearch extends App {
   sqlContext.registerFunction("getToday", getToday _)
 
   /* path to data archive files */
-  val files = "hdfs://quickstart.cloudera:8020/user/cloudera/usagov/"
+  val files = "/Users/angelrojoperez/Desktop/datos-measured-voice/"
 
   /* read lines Data Archives usagov Measured Voice */
   val lines = sc.textFile(files)
@@ -136,7 +136,11 @@ object UsagovBatchElasticsearch extends App {
       |FROM mytable
       |GROUP BY getTimeFromEpoch(t,'dia'), getTimeFromEpoch(t,'hora')
       |ORDER BY counter DESC
-    """.stripMargin).toJSON.take(20).foreach(println)
+    """.stripMargin)//.toJSON.take(20).foreach(println)
+
+  val query3RDD = query3.toJSON.map(_.replaceAll("\"day\":","\"@timestamp\":"))
+  query3RDD.take(20).foreach(println)
+  EsSpark.saveJsonToEs(query3RDD,"usagov-batch/query3")
 
 
 }

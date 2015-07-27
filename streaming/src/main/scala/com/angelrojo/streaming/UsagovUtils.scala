@@ -3,9 +3,15 @@ package com.angelrojo.streaming
 import java.sql.Date
 import java.text.SimpleDateFormat
 import java.util.Calendar
-
+import java.util.Locale
 
 object UsagovUtils {
+
+  /* Funcion que recibe el codigo ISO del pais y devuelve el nombre del pais */
+  def getCountry(country_code: String, lang: Locale): String = {
+    val country =  new Locale("", country_code).getDisplayCountry(lang)
+    country
+  }
 
   /* Funcion que recibe una URL y devuelve el dominio */
   def getDomain(url: String): String = {

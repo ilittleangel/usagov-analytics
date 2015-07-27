@@ -4,6 +4,7 @@ package com.angelrojo.streaming
 import java.util.Date
 import java.util.TimeZone
 import java.text.SimpleDateFormat
+import java.util.Locale
 
 import com.angelrojo.streaming.UsagovUtils._
 import org.apache.spark._
@@ -36,7 +37,8 @@ object UsagovStreamingElasticsearch extends App {
 
   /* Set default timezone GMT+0 */
   TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
-  val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+  private val format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+  private val lang: Locale = Locale.ENGLISH
 
   /* Spark */
   val sparkConf = new SparkConf()
@@ -83,9 +85,12 @@ object UsagovStreamingElasticsearch extends App {
         val ts = linea.split("\"t\":")(1).split(",")(0) 
         val date = format.format(new Date(ts.toLong * 1000L))  
         val timestamp = "\"@timestamp\":\"" + date + "\""
+        // country
+        val country_code = linea.split("\"country_code\":")(1).split(",")(0).replace("\"","")
+        val country = "\"country\":\"" + getCountry(country_code, lang) + "\""
         // salida
         val sinllave = linea.substring(1) 
-        val salida = "{" + timestamp + "," + locationInv + "," + dominio + "," + sinllave 
+        val salida = "{" + timestamp + "," + locationInv + "," + dominio + "," + country + "," + sinllave
         salida 
       })
 
