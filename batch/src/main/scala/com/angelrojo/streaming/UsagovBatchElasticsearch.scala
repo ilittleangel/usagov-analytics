@@ -6,43 +6,33 @@ import org.apache.spark.sql.SQLContext
 import org.elasticsearch.spark.rdd.EsSpark
 
 /**
- * Esta parte batch está pensada para ejecutarse cada dia, por eso se crea por cada
- * ejecucion el campo "@timestamp" con el dia de ejecución, que nos servirá para
- * comparar ejecuciones de diferentes dias. Este campo no tiene nada que ver con el
- * timestamp del json que corresponde con el campo "t".
- *
- * Para que tenga mas sentido la indexacion por @timestamp, en el path hdfs donde
- * se alojan los ficheros historicos de usagov, deverian estar ¿solo? los ficheros
- * correspondientes del dia que se va a ejecutar.
- *
- * Aunque tambien se puede ir ejecutando cada dia todo mas lo de ese dia e ir viendo
- * como evolucionan los patrones detectados
- *
- * Aparte, En ES se va a indexar en distintos _types dentro del mismo index "usaogv-batch"
+ * En ES se va a indexar en distintos _types dentro del mismo index "usagov-batch"
  * Cada query que deseemos indexar en ES, correspondiente con el analisis de patrones,
  * se indexará bajo types distintos.
  *
  * Antes de lanzar este Spark job, es necesario crear el indice con el siguiente mapeo:
  *
- * PUT /usagov-batch
- * {
- *    "mappings" : {
- *        "query1": {
- *            "properties": {
- *                "hour": {
- *                    "type": "date",
- *                    "format" : "HH"
- *                }
- *            }
- *        }
- *    }
- * }
- *
- * Despues de lanzar este job de Spark, se puede consultar el mapping que ES ha hecho
- * a cada campo de nuestro JSON, de esta manera:
- *
- * GET usagov-batch/_mapping
- *
+PUT /usagov-batch
+{
+    "mappings" : {
+      "query1": {
+        "properties": {
+          "hour": {
+            "type": "date",
+            "format": "HH"
+          }
+        }
+      },
+      "query2": {
+        "properties": {
+          "hour": {
+            "type": "date",
+            "format": "HH"
+          }
+        }
+      }
+    }
+}
  * */
 
 
