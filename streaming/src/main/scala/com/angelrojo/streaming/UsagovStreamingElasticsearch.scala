@@ -69,7 +69,7 @@ object UsagovStreamingElasticsearch extends App {
     .foreachRDD { rdd =>
 
      val documentsRDD = rdd.filter(_.nonEmpty)
-       .map(_.replaceAll("\"_id\":", "\"id\":")) // cambio "_id" por "id" para que a la hora de indexar, ES no se vuelva loco
+       .map(_.replaceAll("\"_id\":", "\"id\":")) 
        .map(_.replaceAll("\"a\":", "\"user_agent\":"))
        .map(_.replaceAll("\"al\":", "\"accept_language\":"))
        .map(_.replaceAll("\"c\":", "\"country_code\":"))
@@ -86,21 +86,21 @@ object UsagovStreamingElasticsearch extends App {
        .map(_.replaceAll("\"u\":", "\"url\":"))
        .map( linea => {
         // location
-        val location = linea.split("\"ll\":")(1).split("}")(0) // me quedo con [LATITUDE, LONGITUDE] del campo "ll"
-        val latitude = location.split(",")(0).replace("[","") // me quedo con LATITUDE
-        val longitude = location.split(",")(1).replace("]","") // me quedo con LONGITUDE
-        val locationInv = "\"location\":[" + longitude + "," + latitude + "]" // string con el campo "location" con lat long invertidas
+        val location = linea.split("\"ll\":")(1).split("}")(0) 
+        val latitude = location.split(",")(0).replace("[","") 
+        val longitude = location.split(",")(1).replace("]","") 
+        val locationInv = "\"location\":[" + longitude + "," + latitude + "]" 
         // domain
         val url = linea.split("\"url\":")(1).split(",")(0)
         val dominio = "\"domain\":\"" + getDomain(url) + "\""
         // timestamp
-        val ts = linea.split("\"t\":")(1).split(",")(0) // me quedo con el valor del campo "t"
-        val date = format.format(new Date(ts.toLong * 1000L))  // lo convierto en un Date
-        val timestamp = "\"@timestamp\":\"" + date + "\"" // string con el timestamp calculado
+        val ts = linea.split("\"t\":")(1).split(",")(0) 
+        val date = format.format(new Date(ts.toLong * 1000L))  
+        val timestamp = "\"@timestamp\":\"" + date + "\""
         // salida
-        val sinllave = linea.substring(1) // elimino la llave inicial del json de entrada
-        val salida = "{" + timestamp + "," + locationInv + "," + dominio + "," + sinllave // string de salida concatenado con el json completo
-        salida // devuelvo el contenido de la variable salida
+        val sinllave = linea.substring(1) 
+        val salida = "{" + timestamp + "," + locationInv + "," + dominio + "," + sinllave 
+        salida 
       })
 
 
