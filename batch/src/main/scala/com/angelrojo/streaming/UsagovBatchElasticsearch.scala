@@ -12,27 +12,27 @@ import org.elasticsearch.spark.rdd.EsSpark
  *
  * Antes de lanzar este Spark job, es necesario crear el indice con el siguiente mapeo:
  *
-PUT /usagov-batch
-{
-    "mappings" : {
-      "query1": {
-        "properties": {
-          "hour": {
-            "type": "date",
-            "format": "HH"
+      PUT /usagov-batch
+      {
+          "mappings" : {
+            "query1": {
+              "properties": {
+                "hour": {
+                  "type": "date",
+                  "format": "HH"
+                }
+              }
+            },
+            "query2": {
+              "properties": {
+                "hour": {
+                  "type": "date",
+                  "format": "HH"
+                }
+              }
+            }
           }
-        }
-      },
-      "query2": {
-        "properties": {
-          "hour": {
-            "type": "date",
-            "format": "HH"
-          }
-        }
       }
-    }
-}
  * */
 
 
