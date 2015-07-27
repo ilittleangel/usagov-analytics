@@ -1,0 +1,18 @@
+<!DOCTYPE web-app
+        PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+        "http://java.sun.com/dtd/web-app_2_3.dtd">
+<web-app>
+
+    <servlet>
+        <servlet-name>top</servlet-name>
+        <servlet-class>com.angelrojo.webapp.CServletTopUrlMinutes</servlet-class>
+    </servlet>
+
+
+    <servlet-mapping>
+        <servlet-name>top</servlet-name>
+        <url-pattern>/top</url-pattern>
+    </servlet-mapping>
+
+
+</web-app>
