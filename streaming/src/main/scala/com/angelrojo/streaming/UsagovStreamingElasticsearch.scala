@@ -16,20 +16,24 @@ import org.elasticsearch.spark.rdd.EsSpark
  * Antes de lanzar, hay que crear el index "usagov-streaming" 
  * y mapear el campo "location" como "geo_point"
  *
- * PUT /usagov-streaming
- * {
- *    "mappings" : {
- *        "data": {
- *            "properties": {
- *                "location": {
- *                    "type": "geo_point",
- *                    "lat_lon": true,
- *                    "geohash": true
- *                }
- *            }
- *        }
- *    }
- * }
+      PUT /usagov-streaming
+      {
+          "mappings" : {
+            "data": {
+              "properties": {
+                "location": { "type": "geo_point", "lat_lon": true, "geohash": true },
+                "country": { "type": "string", "index": "not_analyzed" },
+                "timezone": { "type": "string", "index": "not_analyzed" },
+                "geo_city_name": { "type": "string", "index": "not_analyzed" },
+                "global_bitly_hash": { "type": "string", "index": "no" },
+                "geo_region": { "type": "string", "index": "not_analyzed" },
+                "encoding_user_bitly_hash": { "type": "string", "index": "no" },
+                "time_hash_was_created": { "type": "string", "index": "no" },
+                "encoding_user_login": { "type": "string", "index": "no" }
+              }
+            }
+          }
+      }
  * */
 
 
