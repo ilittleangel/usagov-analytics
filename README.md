@@ -632,6 +632,7 @@ Creamos un `DStream` (Discretized Stream) llamado `usagovDSStream` instanciando 
 - invertir las coordenadas del campo `location`
 - parsear el campo `url` para obtener el campo `dominio`
 - generar un campo `@timestamp` 
+- generar un campo `country` con el nombre, a partir del codigo ISO almacenado en `country_code`
 - construir el string `salida`  
 ```scala
 val usagovDStream = ssc.receiverStream(new UsagovReceiver())
@@ -665,12 +666,15 @@ val usagovDStream = ssc.receiverStream(new UsagovReceiver())
         // timestamp
         val ts = linea.split("\"t\":")(1).split(",")(0) 
         val date = format.format(new Date(ts.toLong * 1000L))  
-        val timestamp = "\"@timestamp\":\"" + date + "\"" 
+        val timestamp = "\"@timestamp\":\"" + date + "\""
+        // country
+        val country_code = linea.split("\"country_code\":")(1).split(",")(0).replace("\"","")
+        val country = "\"country\":\"" + getCountry(country_code, lang) + "\""
         // salida
-        val sinllave = linea.substring(1)
-        val salida = "{" + timestamp + "," + locationInv + "," + dominio + "," + sinllave 
+        val sinllave = linea.substring(1) 
+        val salida = "{" + timestamp + "," + locationInv + "," + dominio + "," + country + "," + sinllave
         salida 
-	})
+      })
 ```
 
 Dentro del bucle `foreachRDD` indexamos los RDD en formato JSON en el índice `usagov-streaming` type `data`:
