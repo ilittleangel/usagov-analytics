@@ -180,26 +180,36 @@ Para dar respuesta tanto a la parte batch como a la parte real-time, se han crea
 1. `usagov-streaming`
 2. `usagov-batch` (este contiene dos `_type`, uno por cada query que se ha pretendido responder)
 
-Antes de ejecutar la aplicación sería necesario crear ambos índices mediante las siguientes peticiones:
+Estos índices tienen que ser creados antes de ejecutar la aplicación por primera vez.
 
+Creacion del index `usagov-streaming`:
 ```
 curl -XPUT 'localhost:9200/usagov-streaming?pretty' -d '
 {
     "mappings" : {
       "data": {
         "properties": {
-          "location": {
-            "type": "geo_point",
-            "lat_lon": true,
-            "geohash": true
-          }
+          "location": { "type": "geo_point", "lat_lon": true, "geohash": true },
+          "country": { "type": "string", "index": "not_analyzed" },
+          "timezone": { "type": "string", "index": "not_analyzed" },
+          "geo_city_name": { "type": "string", "index": "not_analyzed" },
+          "global_bitly_hash": { "type": "string", "index": "no" },
+          "geo_region": { "type": "string", "index": "not_analyzed" },
+          "encoding_user_bitly_hash": { "type": "string", "index": "no" },
+          "time_hash_was_created": { "type": "string", "index": "no" },
+          "encoding_user_login": { "type": "string", "index": "no" }
         }
       }
     }
 }'
 ```
-Para el índice `usagov-streaming` solo es necesario indicar explícitamente a Elasticsearch que el datatype del campo `location` sea de tipo `geo_point` para que cuando lo indexe le asigne ese tipo. De esta forma se puede aplicar una función `geo_hash` que solo se aplica a campos de tipo `geo_point`. Esta función va a permitir agrupar puntos en un mapa y así poder contabilizar múltiples cliks en una misma celda dentro de un mapa.
+Para el índice `usagov-streaming` es necesario indicar explícitamente a Elasticsearch que el datatype del campo `location` sea de tipo `geo_point` para que cuando lo indexe le asigne ese tipo. De esta forma se puede aplicar una función `geo_hash` que solo se aplica a campos de tipo `geo_point`. Esta función va a permitir agrupar puntos en un mapa y así poder contabilizar múltiples cliks en una misma celda dentro de un mapa.
 
+Ademas se indica que los campos `country`, `timezone`, `geo_city_name` y `geo_region` no sean analizados por ES ya que algunos nombres son compuestos por dos palabras y al hacer la busqueda nos devuelve dos resultados. Por ejemplo si buscamos "United States" queremos que nos devuelva cuantos clicks en "United States", no cuantos clicks en "United" y cuantos en "States".
+
+Indicamos también que los campos `global_bitly_hash`, `encoding_user_bitly_hash`, `time_hash_was_created` y `encoding_user_login` no sean indexados, pues no vamos a hacer búsquedas por esos campos.
+
+Creacion del index `usagov-batch`:
 ```
 curl -XPUT 'localhost:9200/usagov-batch?pretty' -d '
 {
